@@ -90,31 +90,8 @@ class FeatureInteractionLayer(layers.Layer):
 
         super().build(input_shape)
 
-    def piecewise_linear(self, x, min_val, max_val, num_knots):
-        """
-        Converts x into piecewise linear basis over the given range.
-        """
-        x = self.scale_to_minus_one_to_one(x, min_val, max_val)
-        knot_locs = ops.linspace(-1, 1, num_knots)
-        diffs = x - knot_locs[None, :]  # (B, K)
-        relu_basis = ops.relu(diffs)
-        return relu_basis  # shape: (B, K)
-
-    def encode_sigmoid_knots(self, x, min_val, max_val, num_knots, sharpness=10.0):
-        x = ops.clip(x, min_val, max_val)
-        knots = ops.linspace(min_val, max_val, num_knots)  # shape (K,)
-        diffs = x - knots[None, :]  # shape (B, K)
-        return ops.sigmoid(sharpness * diffs)  # shape (B, K)
-
     def scale_to_minus_one_to_one(self, x, min_val, max_val):
         return 2.0 * (x - min_val) / (max_val - min_val) - 1.0
-
-    def encode_gelu_knots(self, x, min_val, max_val, num_knots):
-        x = self.scale_to_minus_one_to_one(x, min_val, max_val)
-        #x = ops.clip(x, min_val, max_val)
-        knots = ops.linspace(-1, 1, num_knots)  # shape (K,)
-        diffs = x - knots[None, :]  # shape (B, K)
-        return ops.gelu(diffs)  # shape (B, K)
 
     def encode_sigmoid(self, x, min_val, max_val, num_knots):
         x = self.encode_linear(x, min_val, max_val)
@@ -211,13 +188,14 @@ def generate_data(num_samples, n_binary_inputs, groups, group_ops):
     return X.astype("float32"), np.array(y, dtype=np.float32).reshape(-1, 1)
 
 # --- Settings ---
-n_binary_inputs = 40
-groups = [[(0,1,2), 3], [(3,4,5), 3], [(6,7,8), 3], [(9,10,11), 3]]
-group_ops = ['and', 'and', 'or', 'xor']
-test_size = 0.2
-rank = 12
+
 
 if __name__ == '__main__':
+    n_binary_inputs = 40
+    groups = [[(0, 1, 2), 3], [(3, 4, 5), 3], [(6, 7, 8), 3], [(9, 10, 11), 3]]
+    group_ops = ['and', 'and', 'or', 'xor']
+    test_size = 0.2
+    rank = 12
 
     # --- Generate data ---
     X_train, y_train = generate_data(1000, n_binary_inputs, groups, group_ops)

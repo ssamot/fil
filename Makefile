@@ -97,7 +97,19 @@ create_environment:
 
 test_fil:
 	CUDA_VISIBLE_DEVICES="1" KERAS_BACKEND="jax" PYTHONPATH=. $(PYTHON_INTERPRETER) fil/fi_test.py
+kuhn:
+	CUDA_VISIBLE_DEVICES="1" KERAS_BACKEND="jax" PYTHONPATH=. $(PYTHON_INTERPRETER) deepcfr/main_deep_cfr_keras_jax.py --config=../configs/kuhn.py
+kuhn_torch:
+	PYTHONPATH=. $(PYTHON_INTERPRETER) deepcfr/main_deep_cfr_pytorch.py --config=../configs/kuhn.py
 
+leduc:
+	PYTHONPATH=. $(PYTHON_INTERPRETER) deepcfr/main_deep_cfr_pytorch.py --config=../configs/leduc.py
+
+install_server_torch:
+	uv pip install torch torchvision torchaudio
+
+install_server_jax:
+	uv pip install -U "jax[cuda12]"
 
 
 #################################################################################
