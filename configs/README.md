@@ -1,0 +1,1 @@
+Configs for the DeepCFRs specifing all the parameters for the run

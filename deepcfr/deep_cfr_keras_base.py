@@ -42,14 +42,6 @@ from tqdm import tqdm
 from open_spiel.python import policy
 import pyspiel
 
-
-warnings.warn(
-    'Deep CFR TF2 has known issues when using Keras 3 and may be removed '
-    'in a future version unless fixed. See OpenSpiel github issue #1208 '
-    'for details.'
-)
-
-
 # The size of the shuffle buffer used to reshuffle part of the data each
 # epoch within one training iteration
 ADVANTAGE_TRAIN_SHUFFLE_SIZE = 100000
@@ -618,6 +610,12 @@ class DeepCFRSolver(policy.Policy):
     Returns:
       The average loss over the advantage network of the last batch.
     """
+
+    if self._batch_size_advantage:
+        if self._batch_size_advantage > len(self._advantage_memories[player]):
+          ## Skip if there aren't enough samples
+          return None
+
     for _ in range(self._advantage_network_train_steps):
       data = self._advantage_memories[player].sample(self._batch_size_advantage)
       entry_size = len(data[0])
@@ -652,7 +650,7 @@ class DeepCFRSolver(policy.Policy):
         
         return loss
 
-    for _ in tqdm(range(self._policy_network_train_steps)):
+    for _ in range(self._policy_network_train_steps):
       data = self._strategy_memories.sample(self._batch_size_strategy)
       entry_size = len(data[0])
       transformed_data = tuple([keras.ops.convert_to_tensor([data[i][j] for i in range(len(data))]) for j in range(entry_size)])

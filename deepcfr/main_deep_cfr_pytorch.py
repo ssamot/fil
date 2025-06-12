@@ -29,8 +29,8 @@ import importlib.util
 
 from open_spiel.python import policy
 from open_spiel.python.algorithms import exploitability
-import deep_cfr_keras_base as deep_cfr_keras_base
 import pyspiel
+import deep_cfr_pytorch as deep_cfr
 
 FLAGS = flags.FLAGS
 
@@ -47,7 +47,7 @@ def main(unused_argv):
   spec.loader.exec_module(config)
   logging.info("Loading %s", config.game_name)
   game = pyspiel.load_game(config.game_name)
-  deep_cfr_solver = deep_cfr_keras_base.DeepCFRSolver(
+  deep_cfr_solver = deep_cfr.DeepCFRSolver(
     game,
     policy_network_layers=config.policy_network_layers,
     advantage_network_layers=config.advantage_network_layers,
@@ -60,7 +60,7 @@ def main(unused_argv):
     policy_network_train_steps=config.policy_network_train_steps,
     advantage_network_train_steps=config.advantage_network_train_steps,
     reinitialize_advantage_networks=config.reinitialize_advantage_networks)
-  
+
   results = {}
   advantage_losses = collections.defaultdict(list)
   for i in range(deep_cfr_solver._num_iterations):
@@ -69,11 +69,11 @@ def main(unused_argv):
         deep_cfr_solver._traverse_game_tree(deep_cfr_solver._root_node, p)
       if deep_cfr_solver._reinitialize_advantage_networks:
         # Re-initialize advantage network for p and train from scratch.
-        deep_cfr_solver._reinitialize_advantage_network(p)
+        deep_cfr_solver.reinitialize_advantage_network(p)
       advantage_losses[p].append(deep_cfr_solver._learn_advantage_network(p))
 
     # Train policy network.
-    deep_cfr_solver._reinitialize_policy_network()
+    deep_cfr_solver.reinitialize_policy_network()
     policy_loss = deep_cfr_solver._learn_strategy_network()
     deep_cfr_solver._iteration += 1
 
@@ -85,7 +85,7 @@ def main(unused_argv):
       logging.info("Iteration: {} NashConv: {}".format(i, conv))
       results[i] = conv
   
-  results_file = config.results_file_base + "keras.json"
+  results_file = config.results_file_base + "pytorch.json"
   with open(results_file, 'w') as results_file:
     json.dump(results, results_file)
   end = time.time()
