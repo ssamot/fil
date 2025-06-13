@@ -1,0 +1,16 @@
+game_name = "kuhn_poker"
+num_iterations = 100
+num_traversals = 25
+log_frequency = 1
+results_file_base = "../results/kuhn_fil_"
+policy_network_layers=(32,)
+advantage_network_layers=(32,)
+learning_rate=1e-3
+batch_size_advantage=64
+batch_size_strategy=64
+memory_capacity=1e6
+policy_network_train_steps=500
+advantage_network_train_steps=50
+reinitialize_advantage_networks=True
+cat_dims=[2,3,2,2,2]
+fil_groups=[[(0, 2), 2], [(5, 7, 9), 3]]
