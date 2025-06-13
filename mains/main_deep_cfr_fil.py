@@ -29,7 +29,7 @@ import importlib.util
 
 from open_spiel.python import policy
 from open_spiel.python.algorithms import exploitability
-import deep_cfr_jax as deep_cfr
+from deepcfr import deep_cfr_fil as deep_cfr
 import pyspiel
 
 FLAGS = flags.FLAGS
@@ -59,7 +59,9 @@ def main(unused_argv):
     memory_capacity=config.memory_capacity,
     policy_network_train_steps=config.policy_network_train_steps,
     advantage_network_train_steps=config.advantage_network_train_steps,
-    reinitialize_advantage_networks=config.reinitialize_advantage_networks)
+    reinitialize_advantage_networks=config.reinitialize_advantage_networks,
+    cat_dims=config.cat_dims,
+    fil_groups=config.fil_groups)
   
   results = {}
   advantage_losses = collections.defaultdict(list)
@@ -69,11 +71,11 @@ def main(unused_argv):
         deep_cfr_solver._traverse_game_tree(deep_cfr_solver._root_node, p)
       if deep_cfr_solver._reinitialize_advantage_networks:
         # Re-initialize advantage network for p and train from scratch.
-        deep_cfr_solver._reinitialize_advantage_network(p)
+        deep_cfr_solver.reinitialize_advantage_network(p)
       advantage_losses[p].append(deep_cfr_solver._learn_advantage_network(p))
 
     # Train policy network.
-    deep_cfr_solver._reinitialize_policy_network()
+    deep_cfr_solver.reinitialize_policy_network()
     policy_loss = deep_cfr_solver._learn_strategy_network()
     deep_cfr_solver._iteration += 1
 
@@ -85,7 +87,7 @@ def main(unused_argv):
       logging.info("Iteration: {} NashConv: {}".format(i, conv))
       results[i] = conv
   
-  results_file = config.results_file_base + "jax.json"
+  results_file = config.results_file_base + "fil.json"
   with open(results_file, 'w') as results_file:
     json.dump(results, results_file)
   end = time.time()

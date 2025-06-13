@@ -29,7 +29,7 @@ import importlib.util
 
 from open_spiel.python import policy
 from open_spiel.python.algorithms import exploitability
-import deep_cfr_keras_base as deep_cfr_keras_base
+from deepcfr import deep_cfr_jax as deep_cfr
 import pyspiel
 
 FLAGS = flags.FLAGS
@@ -47,7 +47,7 @@ def main(unused_argv):
   spec.loader.exec_module(config)
   logging.info("Loading %s", config.game_name)
   game = pyspiel.load_game(config.game_name)
-  deep_cfr_solver = deep_cfr_keras_base.DeepCFRSolver(
+  deep_cfr_solver = deep_cfr.DeepCFRSolver(
     game,
     policy_network_layers=config.policy_network_layers,
     advantage_network_layers=config.advantage_network_layers,
@@ -85,7 +85,7 @@ def main(unused_argv):
       logging.info("Iteration: {} NashConv: {}".format(i, conv))
       results[i] = conv
   
-  results_file = config.results_file_base + "keras.json"
+  results_file = config.results_file_base + "jax.json"
   with open(results_file, 'w') as results_file:
     json.dump(results, results_file)
   end = time.time()
