@@ -12,6 +12,5 @@ memory_capacity=1e6
 policy_network_train_steps=5000
 advantage_network_train_steps=750
 reinitialize_advantage_networks=True
-cat_dims=[2,6,6,2,2,2,2,2,2,2,2]
-fil_groups=[[(0, 2, 8), 3], [(14, 16, 18, 20), 3], [(22, 24, 26, 28), 3]] # splits to (player, card, card), (first betting round), (second betting round)
+fil_groups=[[((0, 2), (2, 6), (8, 6)), 3], [((14, 2), (16, 2), (18, 2), (20, 2)), 3], [((22, 2), (24, 2), (26, 2), (28, 2)), 3]] # splits to (player, card, card), (first betting round), (second betting round)
 # fil_groups=[[(0, 2, 8), 3], [(14, 16, 18, 20, 22, 24, 26, 28), 3]] # betting rounds together
