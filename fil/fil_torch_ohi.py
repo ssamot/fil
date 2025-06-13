@@ -1,0 +1,127 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import itertools
+from functools import reduce
+from sklearn.metrics import accuracy_score
+import numpy as np
+import random
+from fil.fil_main import generate_data
+from tqdm import tqdm
+
+def count_parameters(model):
+    total = sum(p.numel() for p in model.parameters())
+    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    return total, trainable
+
+
+class FeatureInteractionLayer(nn.Module):
+    def __init__(self, cat_dims, groups):
+        """
+        Args:
+            cat_dims: list of number of categories for each categorical feature
+            groups: list like [[(i1, i2, ...), max_order], ...] with start index for each variable in the oh encoding
+        """
+        super().__init__()
+        self.cat_dims = cat_dims
+        self.groups = groups
+
+    def forward(self, x_oh):
+        batch_size = x_oh.size(0)
+        outputs = []
+
+        for group, max_order in self.groups:
+            one_hots_group = []
+            for i_cat, i_oh in enumerate(group):
+                num_cats = self.cat_dims[i_cat]
+                one_hots_group.append(x_oh[:, i_oh:i_oh+num_cats].float())
+
+            group_output = []
+            for r in range(1, max_order + 1):
+                for combo in itertools.combinations(range(len(group)), r):
+                    tensors = [one_hots_group[i] for i in combo]
+                    interaction = reduce(lambda a, b: torch.einsum("bi,bj->bij", a, b).reshape(batch_size, -1), tensors)
+                    group_output.append(interaction)
+
+            outputs.append(torch.cat(group_output, dim=1))
+
+        return torch.cat(outputs, dim=1)
+
+class CategoricalInteractionModel(nn.Module):
+    def __init__(self, cat_dims, groups):
+        super().__init__()
+        self.encoder = FeatureInteractionLayer(cat_dims, groups)
+
+        # Compute feature dim from a dummy input
+        dummy = torch.zeros((1, len(cat_dims*2)), dtype=torch.long)
+        with torch.no_grad():
+            out_dim = self.encoder(dummy).shape[1]
+
+        self.linear = nn.Linear(out_dim, 1)
+
+    def forward(self, x_cat):
+        x_feat = self.encoder(x_cat)
+        return self.linear(x_feat)
+
+
+if __name__ == '__main__':
+
+    # Fix random seed for reproducibility
+    torch.manual_seed(42)
+    np.random.seed(42)
+    random.seed(42)
+
+
+
+    n_binary_inputs = 12
+    groups_generate = [[(0, 1, 2), 3], [(3, 4, 5), 3], [(6, 7, 8), 3], [(9, 10, 11), 3]]
+    group_ops = ['and', 'and', 'or', 'xor']
+    groups_oh = [[(0, 2, 4), 3], [(6, 8, 10), 3], [(12, 14, 16), 3], [(18, 20, 22), 3]]
+    test_size = 0.2
+    rank = 12
+
+    # --- Generate data ---
+    X_train, y_train = generate_data(1000, n_binary_inputs, groups_generate, group_ops)
+    X_train_oh = [a.flatten() for a in (np.eye(2)[np.asarray(X_train, dtype=np.int32)])]
+
+    X_test, y_test = generate_data(10000, n_binary_inputs, groups_generate, group_ops)
+    X_test_oh = [a.flatten() for a in (np.eye(2)[np.asarray(X_test, dtype=np.int32)])]
+
+    X_train = torch.tensor(X_train_oh, dtype=torch.long)
+    X_test = torch.tensor(X_test_oh, dtype=torch.long)
+    y_train = torch.tensor(y_train, dtype=torch.float32)
+    y_test = torch.tensor(y_test, dtype=torch.float32)
+
+
+    print(X_test.shape)
+    # print(y_test.shape, y_train.shape)
+    # exit()
+
+
+    model = CategoricalInteractionModel(cat_dims=[2]*n_binary_inputs, groups=groups_oh)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
+    print(f"Total parameters: {count_parameters(model)[0]}")
+    loss_fn = nn.MSELoss()
+
+    total = 1000
+    with tqdm(total=total) as pbar:
+        for epoch in (range(total )):
+            model.train()
+            optimizer.zero_grad()
+            y_pred = model(X_train)
+            loss = loss_fn(y_pred, y_train)
+            loss.backward()
+            optimizer.step()
+
+            # Validation
+            model.eval()
+            with torch.no_grad():
+                val_loss = loss_fn(model(X_test), y_test)
+
+            spline_preds = model(X_test).detach(). numpy() > 0.5
+
+            spline_acc = accuracy_score(y_test, spline_preds)
+            pbar.update(1)
+
+            pbar.set_description(f"Epoch {epoch}")
+            pbar.set_postfix({"acc" :f"{spline_acc:.4f}"})
