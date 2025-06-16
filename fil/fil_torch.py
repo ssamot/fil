@@ -17,36 +17,34 @@ def count_parameters(model):
 
 class FeatureInteractionLayer(nn.Module):
     def __init__(self, cat_dims, groups):
-        """
-        Args:
-            cat_dims: list of number of categories for each categorical feature
-            groups: list like [[(i1, i2, ...), max_order], ...]
-        """
         super().__init__()
         self.cat_dims = cat_dims
         self.groups = groups
+        self.total_output_dim = 0
+        self.lookup_params = []  # stores (input_idxs, radix_multipliers, dim, offset)
 
-    def forward(self, x_cat):
-        batch_size = x_cat.size(0)
-        outputs = []
-
-        for group, max_order in self.groups:
-            one_hots = []
-            for idx in group:
-                num_cats = self.cat_dims[idx]
-                one_hot = F.one_hot(x_cat[:, idx], num_classes=num_cats).float()
-                one_hots.append(one_hot)
-
-            group_output = []
+        for group, max_order in groups:
             for r in range(1, max_order + 1):
                 for combo in itertools.combinations(range(len(group)), r):
-                    tensors = [one_hots[i] for i in combo]
-                    interaction = reduce(lambda a, b: torch.einsum("bi,bj->bij", a, b).reshape(batch_size, -1), tensors)
-                    group_output.append(interaction)
+                    idxs = [group[i] for i in combo]
+                    sizes = [cat_dims[i] for i in idxs]
+                    dim = int(np.prod(sizes))
+                    radix = [int(np.prod(sizes[i + 1:])) for i in range(len(sizes))]
+                    offset = self.total_output_dim
+                    self.lookup_params.append((idxs, radix, dim, offset))
+                    self.total_output_dim += dim
 
-            outputs.append(torch.cat(group_output, dim=1))
+    def forward(self, x_cat):
+        B = x_cat.size(0)
+        out = torch.zeros(B, self.total_output_dim, device=x_cat.device)
 
-        return torch.cat(outputs, dim=1)
+        for input_idxs, radix, dim, offset in self.lookup_params:
+            x = x_cat[:, input_idxs]  # (B, r)
+            radix_tensor = torch.tensor(radix, device=x_cat.device).unsqueeze(0)
+            idx = (x * radix_tensor).sum(dim=1)  # (B,)
+            out.scatter_(1, (idx + offset).unsqueeze(1), 1.0)
+
+        return out
 
 class CategoricalInteractionModel(nn.Module):
     def __init__(self, cat_dims, groups):
@@ -75,13 +73,13 @@ if __name__ == '__main__':
 
 
     n_binary_inputs = 12
-    groups = [[(0, 1, 2), 2], [(3, 4, 5), 2], [(6, 7, 8), 2], [(9, 10, 11), 3]]
+    groups = [[(0, 1, 2), 3], [(3, 4, 5), 2], [(6, 7, 8), 2], [(9, 10, 11), 3]]
     group_ops = ['and', 'and', 'or', 'xor']
     test_size = 0.2
     rank = 12
 
     # --- Generate data ---
-    X_train, y_train = generate_data(1000, n_binary_inputs, groups, group_ops)
+    X_train, y_train = generate_data(200, n_binary_inputs, groups, group_ops)
 
     X_test, y_test = generate_data(10000, n_binary_inputs, groups, group_ops)
 

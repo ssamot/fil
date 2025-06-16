@@ -125,9 +125,9 @@ class MLP(nn.Module):
 
     self._layers = []
     # Hidden layers
-    for size in hidden_sizes:
-      self._layers.append(SonnetLinear(in_size=next_layer_input, out_size=size))
-      next_layer_input = size
+    # for size in hidden_sizes:
+    #   self._layers.append(SonnetLinear(in_size=next_layer_input, out_size=size))
+    #   next_layer_input = size
     # Output layer
     self._layers.append(
         SonnetLinear(
@@ -138,13 +138,19 @@ class MLP(nn.Module):
     self.model = nn.ModuleList([self.encoder] + self._layers)
 
   def forward(self, x):
-    for layer in self.model:
-      x = layer(x)
+
+    features = self.model[0]
+    linear_layer = self.model[1]
+
+    x = features(x)
+    x = linear_layer(x)
+
     return x
 
   def reset(self):
-    for layer in self._layers:
-      layer.reset()
+    pass
+    # for layer in self._layers:
+    #   layer.reset()
 
 
 class ReservoirBuffer(object):
@@ -279,8 +285,8 @@ class DeepCFRSolver(policy.Policy):
     # and sampled regret is computed from the advantage networks.
     self._policy_sm = nn.Softmax(dim=-1)
     self._loss_policy = nn.MSELoss()
-    self._optimizer_policy = torch.optim.Adam(
-        self._policy_network.parameters(), lr=learning_rate)
+    self._optimizer_policy = torch.optim.SGD(
+        self._policy_network.parameters(), lr=learning_rate, momentum=0.5)
 
     # Define advantage network, loss & memory. (One per player)
     self._advantage_memories = [
@@ -294,8 +300,8 @@ class DeepCFRSolver(policy.Policy):
     self._optimizer_advantages = []
     for p in range(self._num_players):
       self._optimizer_advantages.append(
-          torch.optim.Adam(
-              self._advantage_networks[p].parameters(), lr=learning_rate))
+          torch.optim.SGD(
+              self._advantage_networks[p].parameters(), lr=learning_rate, momentum=0.5))
     self._learning_rate = learning_rate
 
   @property
