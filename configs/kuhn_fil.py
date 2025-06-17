@@ -12,4 +12,5 @@ memory_capacity=1e6
 policy_network_train_steps=10
 advantage_network_train_steps=100
 reinitialize_advantage_networks=False
-fil_groups=[[((0, 2), (2, 3), (5, 2), (7, 2), (9, 2)), 3]]
+cat_dims = [2, 3, 2, 2, 2]
+fil_groups=[[(0, 1, 2, 3, 4), 3]]
