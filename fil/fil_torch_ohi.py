@@ -16,38 +16,71 @@ def count_parameters(model):
 
 
 class FeatureInteractionLayer(nn.Module):
-    def __init__(self, groups):
-        """
-        Args:
-            groups: list like [[(i1, s1), (i2, s2), ...), max_order], ...] with start index for each variable in the oh encoding and size of the oh encoding
-        """
+    def __init__(self, cat_dims, groups, layers):
         super().__init__()
+        self.cat_dims = cat_dims
         self.groups = groups
+        self.total_output_dim = 0
+        self.lookup_params = []  # stores (input_idxs, radix_multipliers, dim, offset)
+        self.group_layers = nn.ModuleList()
+        self.group_splits = []
 
-    def forward(self, x_oh):
-        batch_size = x_oh.size(0)
-        outputs = []
-
-        for group, max_order in self.groups:
-            one_hots_group = []
-            for idx, cat_size in group:
-                one_hots_group.append(x_oh[:, idx:idx+cat_size].float())
-
-            group_output = []
+        for group, max_order in groups:
+            group_output_dim = 0
             for r in range(1, max_order + 1):
                 for combo in itertools.combinations(range(len(group)), r):
-                    tensors = [one_hots_group[i] for i in combo]
-                    interaction = reduce(lambda a, b: torch.einsum("bi,bj->bij", a, b).reshape(batch_size, -1), tensors)
-                    group_output.append(interaction)
+                    idxs = [group[i] for i in combo]
+                    sizes = [cat_dims[i] for i in idxs]
+                    dim = int(np.prod(sizes))
+                    radix = [int(np.prod(sizes[i + 1:])) for i in range(len(sizes))]
+                    offset = self.total_output_dim
+                    self.lookup_params.append((idxs, radix, dim, offset))
+                    self.total_output_dim += dim
+                    group_output_dim += dim
+            input_size = group_output_dim
+            group_layers = []
+            for layer_dim in layers:
+                output_size = group_output_dim if layer_dim == -1 else layer_dim                
+                group_layers.append(nn.Sequential(nn.Linear(input_size, output_size), nn.LeakyReLU()))
+                input_size = output_size
+            self.group_layers.append(nn.ModuleList(group_layers))
+            self.group_splits.append(group_output_dim)
 
-            outputs.append(torch.cat(group_output, dim=1))
+    def forward(self, x_oh):
+        x_cat = self.onehot_to_categorical_vectorized(x_oh)
+        B = x_cat.size(0)
+        out = torch.zeros(B, self.total_output_dim, device=x_cat.device)
 
-        return torch.cat(outputs, dim=1)
+        for input_idxs, radix, dim, offset in self.lookup_params:
+            x = x_cat[:, input_idxs]  # (B, r)
+            radix_tensor = torch.tensor(radix, device=x_cat.device).unsqueeze(0)
+            idx = (x * radix_tensor).sum(dim=1)  # (B,)
+            out.scatter_(1, (idx + offset).unsqueeze(1), 1.0)
+        splits = torch.split(out, self.group_splits, dim=1)
+        out_splits = []
+        for split, group_layers in zip(splits, self.group_layers):
+            for layer in group_layers:
+                split = layer(split)
+            out_splits.append(split)
+        output = torch.cat(out_splits, dim=1)
+        return output
+    
+    def onehot_to_categorical_vectorized(self, x_onehot):
+        feature_chunks = torch.split(x_onehot, self.cat_dims, dim=1)
+        categorical_indices = [torch.argmax(chunk, dim=1) for chunk in feature_chunks]
+        return torch.stack(categorical_indices, dim=1)
+    
+    def reset(self):
+        for group_layers in self.group_layers:
+            for layer in group_layers:
+                for sublayer in layer:
+                    if hasattr(sublayer, 'reset_parameters'):
+                        sublayer.reset()
 
 class CategoricalInteractionModel(nn.Module):
-    def __init__(self, cat_dims, groups):
+    def __init__(self, cat_dims, groups, layers):
         super().__init__()
-        self.encoder = FeatureInteractionLayer(cat_dims, groups)
+        self.encoder = FeatureInteractionLayer(cat_dims, groups, layers)
 
         # Compute feature dim from a dummy input
         dummy = torch.zeros((1, len(cat_dims*2)), dtype=torch.long)
@@ -73,7 +106,6 @@ if __name__ == '__main__':
     n_binary_inputs = 12
     groups_generate = [[(0, 1, 2), 3], [(3, 4, 5), 3], [(6, 7, 8), 3], [(9, 10, 11), 3]]
     group_ops = ['and', 'and', 'or', 'xor']
-    groups_oh = [[(0, 2, 4), 3], [(6, 8, 10), 3], [(12, 14, 16), 3], [(18, 20, 22), 3]]
     test_size = 0.2
     rank = 12
 
@@ -95,7 +127,7 @@ if __name__ == '__main__':
     # exit()
 
 
-    model = CategoricalInteractionModel(cat_dims=[2]*n_binary_inputs, groups=groups_oh)
+    model = CategoricalInteractionModel(cat_dims=[2]*n_binary_inputs, groups=groups_generate, layers=[-1])
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.001)
     print(f"Total parameters: {count_parameters(model)[0]}")
     loss_fn = nn.MSELoss()
