@@ -58,6 +58,8 @@ class FeatureInteractionLayer(nn.Module):
             out.scatter_(1, (idx + offset).unsqueeze(1), 1.0)
         splits = torch.split(out, self.group_splits, dim=1)
         out_splits = []
+        if len(self.group_layers) == 0:
+            return out
         for split, group_layers in zip(splits, self.group_layers):
             for layer in group_layers:
                 split = layer(split)
