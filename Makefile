@@ -100,7 +100,7 @@ test_fil:
 kuhn:
 	CUDA_VISIBLE_DEVICES="1" KERAS_BACKEND="jax" PYTHONPATH=. $(PYTHON_INTERPRETER) deepcfr/main_deep_cfr_keras_jax.py --config=../configs/kuhn.py
 kuhn_torch:
-	PYTHONPATH=. $(PYTHON_INTERPRETER) deepcfr/main_deep_cfr_pytorch.py --config=../configs/kuhn.py
+	PYTHONPATH=. $(PYTHON_INTERPRETER) mains/main_deep_cfr_pytorch.py --config=../configs/kuhn.py
 
 leduc:
 	PYTHONPATH=. $(PYTHON_INTERPRETER) deepcfr/main_deep_cfr_pytorch.py --config=../configs/leduc.py
