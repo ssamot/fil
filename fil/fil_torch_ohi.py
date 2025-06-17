@@ -77,7 +77,7 @@ class FeatureInteractionLayer(nn.Module):
             for layer in group_layers:
                 for sublayer in layer:
                     if hasattr(sublayer, 'reset_parameters'):
-                        sublayer.reset()
+                        sublayer.reset_parameters()
 
 class CategoricalInteractionModel(nn.Module):
     def __init__(self, cat_dims, groups, layers):

@@ -119,17 +119,21 @@ class MLP(nn.Module):
 
     super(MLP, self).__init__()
 
-    self.encoder = fil_torch_ohi.FeatureInteractionLayer(cat_dims, groups, [output_size])
+    self.encoder = fil_torch_ohi.FeatureInteractionLayer(cat_dims, groups, [])
     dummy = torch.zeros((1, input_size), dtype=torch.long)
     with torch.no_grad():
         next_layer_input = self.encoder(dummy).shape[1]
+
+    self.linear = SonnetLinear(
+            in_size=next_layer_input,
+            out_size=output_size,
+            activate_relu=activate_final)
     
-    self.model = nn.ModuleList([self.encoder])
+    self.model = nn.ModuleList([self.encoder] + [self.linear])
 
   def forward(self, x):
     for layer in self.model:
       x = layer(x)
-    
     return x
 
   def reset(self):
