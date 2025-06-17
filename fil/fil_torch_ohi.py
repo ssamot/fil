@@ -41,7 +41,7 @@ class FeatureInteractionLayer(nn.Module):
             group_layers = []
             for layer_dim in layers:
                 output_size = group_output_dim if layer_dim == -1 else layer_dim                
-                group_layers.append(nn.Sequential(nn.Linear(input_size, output_size), nn.LeakyReLU()))
+                group_layers.append(nn.Sequential(nn.Linear(input_size, output_size)))
                 input_size = output_size
             self.group_layers.append(nn.ModuleList(group_layers))
             self.group_splits.append(group_output_dim)
