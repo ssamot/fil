@@ -277,16 +277,21 @@ class DeepCFRSolver(policy.Policy):
     self._fil_groups = fil_groups
 
     # Define strategy network, loss & memory.
-    self._strategy_memories = ReservoirBuffer(memory_capacity)
-    self._policy_network = MLP(self._embedding_size,
-                               list(policy_network_layers),
-                               self._num_actions, self._cat_dims, self._fil_groups[-1])
+    self._strategy_memories = [
+        ReservoirBuffer(memory_capacity) for _ in range(self._num_players)
+    ]
+    self._policy_networks = [
+        MLP(self._embedding_size, list(advantage_network_layers),
+            self._num_actions, self._cat_dims, self._fil_groups[pl]) for pl in range(self._num_players)
+    ]
     # Illegal actions are handled in the traversal code where expected payoff
     # and sampled regret is computed from the advantage networks.
     self._policy_sm = nn.Softmax(dim=-1)
     self._loss_policy = nn.MSELoss()
-    self._optimizer_policy = torch.optim.Adam(
-        self._policy_network.parameters(), lr=learning_rate)
+    self._optimizer_policies = []
+    for p in range(self._num_players):
+      self._optimizer_policies.append(torch.optim.Adam(
+        self._policy_networks[p].parameters(), lr=learning_rate))
 
     # Define advantage network, loss & memory. (One per player)
     self._advantage_memories = [
@@ -316,10 +321,14 @@ class DeepCFRSolver(policy.Policy):
     for p in range(self._num_players):
       self._advantage_memories[p].clear()
 
-  def reinitialize_policy_network(self):
-    self._policy_network.reset()
-    self._optimizer_policy = torch.optim.Adam(
-        self._policy_network.parameters(), lr=self._learning_rate)
+  def reinitialize_policy_networks(self):
+    for p in range(self._num_players):
+      self.reinitialize_policy_network(p)
+
+  def reinitialize_policy_network(self, player):
+    self._policy_networks[player].reset()
+    self._optimizer_policies[player] = torch.optim.Adam(
+        self._policy_networks[player].parameters(), lr=self._learning_rate)
 
   def reinitialize_advantage_network(self, player):
     self._advantage_networks[player].reset()
@@ -354,7 +363,7 @@ class DeepCFRSolver(policy.Policy):
         advantage_losses[p].append(self._learn_advantage_network(p))
       self._iteration += 1
       # Train policy network.
-    policy_loss = self._learn_strategy_network()
+    policy_loss = self._learn_strategy_networks()
     return self._policy_network, advantage_losses, policy_loss
 
   def _traverse_game_tree(self, state, player):
@@ -406,7 +415,7 @@ class DeepCFRSolver(policy.Policy):
       probs = np.array(strategy)
       probs /= probs.sum()
       sampled_action = np.random.choice(range(self._num_actions), p=probs)
-      self._strategy_memories.add(
+      self._strategy_memories[other_player].add(
           StrategyMemory(
               state.information_state_tensor(other_player), self._iteration,
               strategy))
@@ -455,7 +464,7 @@ class DeepCFRSolver(policy.Policy):
     if len(info_state_vector.shape) == 1:
       info_state_vector = np.expand_dims(info_state_vector, axis=0)
     with torch.no_grad():
-      logits = self._policy_network(torch.FloatTensor(info_state_vector))
+      logits = self._policy_networks[cur_player](torch.FloatTensor(info_state_vector))
       probs = self._policy_sm(logits).numpy()
     return {action: probs[0][action] for action in legal_actions}
 
@@ -503,35 +512,36 @@ class DeepCFRSolver(policy.Policy):
 
     return loss_advantages.detach().numpy()
 
-  def _learn_strategy_network(self):
+  def _learn_strategy_networks(self):
     """Compute the loss over the strategy network.
 
     Returns:
       (float) The average loss obtained on this batch of transitions or `None`.
     """
-    for _ in range(self._policy_network_train_steps):
-      if self._batch_size_strategy:
-        if self._batch_size_strategy > len(self._strategy_memories):
-          ## Skip if there aren't enough samples
-          return None
-        samples = self._strategy_memories.sample(self._batch_size_strategy)
-      else:
-        samples = self._strategy_memories
-      info_states = []
-      action_probs = []
-      iterations = []
-      for s in samples:
-        info_states.append(s.info_state)
-        action_probs.append(s.strategy_action_probs)
-        iterations.append([s.iteration])
+    for p in range(self._num_players):
+      for _ in range(self._policy_network_train_steps):
+        if self._batch_size_strategy:
+          if self._batch_size_strategy > len(self._strategy_memories[p]):
+            ## Skip if there aren't enough samples
+            return None
+          samples = self._strategy_memories[p].sample(self._batch_size_strategy)
+        else:
+          samples = self._strategy_memories[p]
+        info_states = []
+        action_probs = []
+        iterations = []
+        for s in samples:
+          info_states.append(s.info_state)
+          action_probs.append(s.strategy_action_probs)
+          iterations.append([s.iteration])
 
-      self._optimizer_policy.zero_grad()
-      iters = torch.FloatTensor(np.sqrt(np.array(iterations)))
-      ac_probs = torch.FloatTensor(np.array(np.squeeze(action_probs)))
-      logits = self._policy_network(torch.FloatTensor(np.array(info_states)))
-      outputs = self._policy_sm(logits)
-      loss_strategy = self._loss_policy(iters * outputs, iters * ac_probs)
-      loss_strategy.backward()
-      self._optimizer_policy.step()
+        self._optimizer_policies[p].zero_grad()
+        iters = torch.FloatTensor(np.sqrt(np.array(iterations)))
+        ac_probs = torch.FloatTensor(np.array(np.squeeze(action_probs)))
+        logits = self._policy_networks[p](torch.FloatTensor(np.array(info_states)))
+        outputs = self._policy_sm(logits)
+        loss_strategy = self._loss_policy(iters * outputs, iters * ac_probs)
+        loss_strategy.backward()
+        self._optimizer_policies[p].step()
 
     return loss_strategy.detach().numpy()

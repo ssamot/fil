@@ -51,7 +51,7 @@ class DeepCFRSolverParalel(deep_cfr.DeepCFRSolver):
         probs /= probs.sum()
         sampled_action = np.random.choice(range(self._num_actions), p=probs)
         with self._strategy_lock:
-          self._strategy_memories.add(
+          self._strategy_memories[other_player].add(
               deep_cfr.StrategyMemory(
                   state.information_state_tensor(other_player), self._iteration,
                   strategy))

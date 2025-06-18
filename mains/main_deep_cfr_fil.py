@@ -75,8 +75,8 @@ def main(unused_argv):
       advantage_losses[p].append(deep_cfr_solver._learn_advantage_network(p))
 
     # Train policy network.
-    deep_cfr_solver.reinitialize_policy_network()
-    policy_loss = deep_cfr_solver._learn_strategy_network()
+    deep_cfr_solver.reinitialize_policy_networks()
+    policy_loss = deep_cfr_solver._learn_strategy_networks()
     deep_cfr_solver._iteration += 1
 
     if i % config.log_frequency == 0:
