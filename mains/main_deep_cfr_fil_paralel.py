@@ -69,11 +69,10 @@ def main(unused_argv):
 
   results = {}
   advantage_losses = collections.defaultdict(list)
-  player_traverses = [wrapped_traverse(p) for p in range(deep_cfr_solver._num_players)]
   for i in range(deep_cfr_solver._num_iterations):
     for p in range(deep_cfr_solver._num_players):
       with ThreadPoolExecutor() as executor:
-        futures = [executor.submit(player_traverses[p]) for _ in range(deep_cfr_solver._num_traversals)]
+        futures = [executor.submit(lambda p=p: wrapped_traverse(p)) for _ in range(deep_cfr_solver._num_traversals)]
         for future in futures:
             future.result()
       if deep_cfr_solver._reinitialize_advantage_networks:

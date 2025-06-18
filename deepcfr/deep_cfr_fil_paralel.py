@@ -1,6 +1,5 @@
 from deepcfr import deep_cfr_fil as deep_cfr
 
-from tdqm import tdqm
 import numpy as np
 import collections
 
@@ -8,8 +7,8 @@ from threading import Lock
 
 class DeepCFRSolverParalel(deep_cfr.DeepCFRSolver):
     
-    def __init__(self):
-      super(DeepCFRSolverParalel, self).__init__()
+    def __init__(self, *args, **kwargs):
+      super(DeepCFRSolverParalel, self).__init__(*args, **kwargs)
       self._strategy_lock = Lock()
       self._advantage_lock = Lock()
 
