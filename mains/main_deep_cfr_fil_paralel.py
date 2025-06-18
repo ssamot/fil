@@ -26,6 +26,7 @@ from absl import logging
 import collections
 import json
 import importlib.util
+from concurrent.futures import ThreadPoolExecutor
 
 from open_spiel.python import policy
 from open_spiel.python.algorithms import exploitability
@@ -47,7 +48,7 @@ def main(unused_argv):
   spec.loader.exec_module(config)
   logging.info("Loading %s", config.game_name)
   game = pyspiel.load_game(config.game_name)
-  deep_cfr_solver = deep_cfr.DeepCFRSolver(
+  deep_cfr_solver = deep_cfr.DeepCFRSolverParalel(
     game,
     policy_network_layers=config.policy_network_layers,
     advantage_network_layers=config.advantage_network_layers,
@@ -63,12 +64,18 @@ def main(unused_argv):
     cat_dims=config.cat_dims,
     fil_groups=config.fil_groups)
   
+  def wrapped_traverse(p):
+    return deep_cfr_solver._traverse_game_tree(deep_cfr_solver._root_node, p)
+
   results = {}
   advantage_losses = collections.defaultdict(list)
+  player_traverses = [wrapped_traverse(p) for p in range(deep_cfr_solver._num_players)]
   for i in range(deep_cfr_solver._num_iterations):
     for p in range(deep_cfr_solver._num_players):
-      for _ in range(deep_cfr_solver._num_traversals):
-        deep_cfr_solver._traverse_game_tree(deep_cfr_solver._root_node, p)
+      with ThreadPoolExecutor() as executor:
+        futures = [executor.submit(player_traverses[p]) for _ in range(deep_cfr_solver._num_traversals)]
+        for future in futures:
+            future.result()
       if deep_cfr_solver._reinitialize_advantage_networks:
         # Re-initialize advantage network for p and train from scratch.
         deep_cfr_solver.reinitialize_advantage_network(p)
