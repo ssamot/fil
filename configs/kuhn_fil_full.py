@@ -13,4 +13,7 @@ policy_network_train_steps=500
 advantage_network_train_steps=50
 reinitialize_advantage_networks=False
 cat_dims=[2, 3, 2, 2, 2]
-fil_groups=[[(0, 1, 2, 3, 4), 3]]
+fil_groups=[
+    [[(0, 1, 2, 3, 4), 3]],
+    [[(0, 1, 2, 3, 4), 3]]
+]
