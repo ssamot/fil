@@ -114,6 +114,24 @@ class MultiplicationLayer(nn.Module):
       out_cat.append(torch.prod(x[:,mask], dim=1, keepdim=True))
     output = torch.cat(out_cat, dim=1)
     return output
+  
+class AditionLayer(nn.Module):
+  def __init__(self, input_size, output_size):
+    super(AditionLayer, self).__init__()
+
+    self.input_size = input_size
+    self.output_size = output_size
+
+  def forward(self, x):
+    if self.output_size == self.input_size:
+      return x
+    indices = torch.arange(self.input_size)
+    out_cat = []
+    for i in range(self.output_size):
+      mask = (indices % self.output_size == i)
+      out_cat.append(torch.sum(x[:,mask], dim=1, keepdim=True))
+    output = torch.cat(out_cat, dim=1)
+    return output
 
 class MLP(nn.Module):
   """A simple network built from nn.linear layers."""
@@ -140,7 +158,7 @@ class MLP(nn.Module):
     dummy = torch.zeros((1, input_size), dtype=torch.long)
     with torch.no_grad():
         next_layer_input = self.encoder(dummy).shape[1]
-    self.multiplication_layer = MultiplicationLayer(next_layer_input, output_size)
+    self.multiplication_layer = AditionLayer(next_layer_input, output_size)
     
   def forward(self, x):
     x = self.encoder(x)
