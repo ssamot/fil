@@ -1,8 +1,8 @@
 game_name = "kuhn_poker"
-num_iterations = 100
-num_traversals = 25
+num_iterations = 1000
+num_traversals = 50
 log_frequency = 1
-results_file_base = "../results/kuhn_fil_"
+results_file_base = "../results/kuhn_fil_split_"
 policy_network_layers=()
 advantage_network_layers=()
 learning_rate=1e-3
@@ -11,7 +11,11 @@ batch_size_strategy=64
 memory_capacity=1e6
 policy_network_train_steps=500
 advantage_network_train_steps=50
-reinitialize_advantage_networks=True
+reinitialize_advantage_networks=False
 cat_dims=[2, 3, 2, 2, 2]
 # fil_groups=[[(0, 1), 2], [(2, 3, 4), 3]]
-fil_groups=[[(0, 1, 2, 3, 4), 3]]
+fil_groups=[
+    [[(0, 1, 2, 4), 4], [(3,), 1]],
+    [[(0, 1, 3), 3], [(2, 4), 2]],
+    [[(0, 1, 2, 3, 4), 5]]
+]

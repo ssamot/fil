@@ -280,7 +280,7 @@ class DeepCFRSolver(policy.Policy):
     self._strategy_memories = ReservoirBuffer(memory_capacity)
     self._policy_network = MLP(self._embedding_size,
                                list(policy_network_layers),
-                               self._num_actions, self._cat_dims, self._fil_groups)
+                               self._num_actions, self._cat_dims, self._fil_groups[-1])
     # Illegal actions are handled in the traversal code where expected payoff
     # and sampled regret is computed from the advantage networks.
     self._policy_sm = nn.Softmax(dim=-1)
@@ -294,7 +294,7 @@ class DeepCFRSolver(policy.Policy):
     ]
     self._advantage_networks = [
         MLP(self._embedding_size, list(advantage_network_layers),
-            self._num_actions, self._cat_dims, self._fil_groups) for _ in range(self._num_players)
+            self._num_actions, self._cat_dims, self._fil_groups[pl]) for pl in range(self._num_players)
     ]
     self._loss_advantages = nn.MSELoss(reduction="mean")
     self._optimizer_advantages = []
