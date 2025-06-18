@@ -172,3 +172,5 @@ scratch/
 data/processed
 dummy/
 *.log
+
+cluster_stuff/
