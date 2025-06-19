@@ -32,7 +32,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from tqdm import tqdm
-from fil import compositional
+from fil import samplecomp
 from fil import one_hot_to_cat
 
 from open_spiel.python import policy
@@ -108,6 +108,8 @@ class MLP(nn.Module):
                cat_dims,
                input_indices,
                functions,
+               n_features,
+               depth,
                activate_final=False):
     """Create the MLP.
 
@@ -121,7 +123,7 @@ class MLP(nn.Module):
     super(MLP, self).__init__()
 
     self.one_hot_to_cat = one_hot_to_cat.OneHotToCategoricalLayer(cat_dims)
-    self.compositional = compositional.CompositionalFeatureLayer(input_indices, functions, depth=1)
+    self.compositional = samplecomp.SampledCompositionalFeatureLayer(input_indices, functions, n_features=n_features, depth=depth)
     dummy = torch.zeros((1, input_size), dtype=torch.long)
     with torch.no_grad():
         cat_input = self.one_hot_to_cat(dummy)
@@ -224,7 +226,9 @@ class DeepCFRSolver(policy.Policy):
                reinitialize_advantage_networks: bool = True,
                cat_dims = [],
                input_indices = [],
-               functions = []):
+               functions = [],
+               n_features: int = 64,
+               depth: int = 2):
     """Initialize the Deep CFR algorithm.
 
     Args:
@@ -267,6 +271,8 @@ class DeepCFRSolver(policy.Policy):
     self._cat_dims = cat_dims
     self._input_indices = input_indices
     self._functions = functions
+    self._n_features = n_features
+    self._depth = depth
 
     # Define strategy network, loss & memory.
     self._strategy_memories = [
@@ -274,7 +280,7 @@ class DeepCFRSolver(policy.Policy):
     ]
     self._policy_networks = [
         MLP(self._embedding_size, list(advantage_network_layers),
-            self._num_actions, self._cat_dims, self._input_indices, self._functions) for pl in range(self._num_players)
+            self._num_actions, self._cat_dims, self._input_indices, self._functions, self._n_features, self._depth) for pl in range(self._num_players)
     ]
     # Illegal actions are handled in the traversal code where expected payoff
     # and sampled regret is computed from the advantage networks.
@@ -291,7 +297,7 @@ class DeepCFRSolver(policy.Policy):
     ]
     self._advantage_networks = [
         MLP(self._embedding_size, list(advantage_network_layers),
-            self._num_actions, self._cat_dims, self._input_indices, self._functions) for pl in range(self._num_players)
+            self._num_actions, self._cat_dims, self._input_indices, self._functions, self._n_features, self._depth) for pl in range(self._num_players)
     ]
     self._loss_advantages = nn.MSELoss(reduction="mean")
     self._optimizer_advantages = []

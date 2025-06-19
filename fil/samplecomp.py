@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 import random
-from compositional import Min, Max, Mul
+from fil.compositional import Min, Max, Mul, string_to_function
 import torch
 import torch.nn as nn
 import random
@@ -10,6 +10,9 @@ import random
 class SampledCompositionalFeatureLayer(nn.Module):
     def __init__(self, input_indices, functions, depth, n_features, seed=None):
         super().__init__()
+        if isinstance(functions[0], str):
+            functions = [string_to_function(s) for s in functions]
+
         self.input_indices = input_indices
         self.functions = functions
         self.depth = depth
