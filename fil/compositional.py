@@ -152,23 +152,23 @@ class CompositionalFeatureLayer(nn.Module):
 if __name__ == "__main__":
     # Input tensor (batch_size, num_features)
     x = torch.tensor([
-        [1.0, 2.0, 3.0],
-        [4.0, 5.0, 6.0]
+        [1.0, 2.0, 3.0, 5.0, 6, ],
+        [4.0, 5.0, 6.0, 5.0, 6]
     ])
 
     # Define function objects
-    functions = [Add(), Mul(), Min(), Max(), SoftIfThenElse()]
+    functions = [Mul()]
 
     # Construct the layer
-    layer = CompositionalFeatureLayer(input_indices=[0, 1], functions=functions, depth=2)
+    layer = CompositionalFeatureLayer(input_indices=[0, 1, 2,3,4], functions=functions, depth=3)
 
     # Forward pass
     out = layer(x)
 
     print("Output shape:", out.shape)
-    print("Generated features:\n", out)
+    #print("Generated features:\n", out)
 
     # Print feature names
-    print("\nFeature descriptions:")
-    for desc in layer.feature_descriptions:
-        print(desc)
+    # print("\nFeature descriptions:")
+    # for desc in layer.feature_descriptions:
+    #     print(desc)
