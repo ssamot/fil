@@ -28,20 +28,25 @@ class FeatureInteractionLayer(nn.Module):
         batch_size = x_oh.size(0)
         outputs = []
 
+
         for group, max_order in self.groups:
             one_hots_group = []
             for idx, cat_size in group:
                 one_hots_group.append(x_oh[:, idx:idx+cat_size].float())
 
             group_output = []
-            for r in range(1, max_order + 1):
-                for combo in itertools.combinations(range(len(group)), r):
-                    tensors = [one_hots_group[i] for i in combo]
-                    interaction = reduce(lambda a, b: torch.einsum("bi,bj->bij", a, b).reshape(batch_size, -1), tensors)
-                    group_output.append(interaction)
+
+            #for r in range(max_order, max_order + 1):
+            for combo in itertools.combinations(range(len(group)), max_order):
+                #print(combo)
+                tensors = [one_hots_group[i] for i in combo]
+                interaction = reduce(lambda a, b: torch.einsum("bi,bj->bij", a, b).reshape(batch_size, -1), tensors)
+                #print(interaction)
+                group_output.append(interaction)
 
             outputs.append(torch.cat(group_output, dim=1))
-
+        #print(len(outputs[0]))
+        #exit()
         return torch.cat(outputs, dim=1)
 
 class CategoricalInteractionModel(nn.Module):

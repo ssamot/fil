@@ -143,6 +143,7 @@ class MLP(nn.Module):
     linear_layer = self.model[1]
 
     x = features(x)
+    #print(x.shape)
     x = linear_layer(x)
 
     return x
