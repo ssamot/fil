@@ -48,6 +48,22 @@ class Avg:
         return (x + y) / 2
     def __repr__(self):
         return "avg"
+    
+def string_to_function(name):
+    if name == repr(Add()):
+        return Add()
+    elif name == repr(Mul()):
+        return Mul()
+    elif name == repr(Min()):
+        return Min()
+    elif name == repr(Max()):
+        return Max()
+    elif name == repr(SoftIfThenElse()):
+        return SoftIfThenElse()
+    elif name == repr(Avg()):
+        return Avg()
+    else:
+        raise ValueError("Function name " + name + " is not supported.")
 
 # class SoftMajorityVote:
 #     arity = 3
@@ -88,6 +104,10 @@ class CompositionalFeatureLayer(nn.Module):
             depth (int): Maximum depth of function composition.
         """
         super().__init__()
+
+        if isinstance(functions[0], str):
+            functions = [string_to_function(s) for s in functions]
+
         self.input_indices = input_indices
         self.functions = functions
         self.depth = depth
