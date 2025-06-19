@@ -15,7 +15,7 @@ class OneHotToCategoricalLayer(nn.Module):
     def forward(self, x):
         feature_chunks = torch.split(x, self._cat_dims, dim=1)
         categorical_indices = [torch.argmax(chunk, dim=1) for chunk in feature_chunks]
-        return torch.stack(categorical_indices, dim=1).float()
+        return torch.stack(categorical_indices, dim=1)
     
 # === Example Usage ===
 

@@ -34,6 +34,7 @@ import torch.nn.functional as F
 from tqdm import tqdm
 from fil import compositional
 from fil import one_hot_to_cat
+from fil import embedder
 
 from open_spiel.python import policy
 import pyspiel
@@ -121,11 +122,13 @@ class MLP(nn.Module):
     super(MLP, self).__init__()
 
     self.one_hot_to_cat = one_hot_to_cat.OneHotToCategoricalLayer(cat_dims)
+    self.embedder = embedder.Embedder(cat_dims)
     self.compositional = compositional.CompositionalFeatureLayer(input_indices, functions, depth=1)
     dummy = torch.zeros((1, input_size), dtype=torch.long)
     with torch.no_grad():
         cat_input = self.one_hot_to_cat(dummy)
-        next_layer_input = self.compositional(cat_input).shape[1]
+        embedded_input = self.embedder(cat_input)
+        next_layer_input = self.compositional(embedded_input).shape[1]
     self.linear = SonnetLinear(
             in_size=next_layer_input,
             out_size=output_size,
@@ -133,6 +136,7 @@ class MLP(nn.Module):
     
   def forward(self, x):
     x = self.one_hot_to_cat(x)
+    x = self.embedder(x)
     x = self.compositional(x)
     x = self.linear(x)
     return x

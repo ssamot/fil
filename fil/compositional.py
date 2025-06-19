@@ -152,7 +152,7 @@ class CompositionalFeatureLayer(nn.Module):
 if __name__ == "__main__":
     # Input tensor (batch_size, num_features)
     x = torch.tensor([
-        [1.0, 2.0, 3.0, 5.0, 6, ],
+        [1.0, 2.0, 3.0, 5.0, 6],
         [4.0, 5.0, 6.0, 5.0, 6]
     ])
 
