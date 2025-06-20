@@ -31,5 +31,39 @@ class TestOneHotFilComparedToOneHotConverterPlusNormalFil(unittest.TestCase):
 
         self.assertTrue(torch.equal(one_hot_fil_result, fil_result))
 
+    def test_output_comparison_kuhn(self):
+        cat_dims=[2,3,2,2,2]
+        fil_groups=[
+            [(1, 2), 2],
+            [(1, 3), 2],
+            [(1, 4), 2],
+            [(1,), 1],
+        ]
+
+        fil_groups_oh=[
+            [((2, 3), (5, 2)), 2],
+            [((2, 3), (7, 2)), 2],
+            [((2, 3), (9, 2)), 2],
+            [((2, 3),), 1],
+        ]
+
+        X_train_oh = [
+            [0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0],
+            [0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1],
+        ]
+
+        X_train_oh = torch.Tensor(np.array(X_train_oh))
+
+        one_hot_fil = OneHotFil(fil_groups_oh)
+
+        one_hot_to_cat = OneHotToCategoricalLayer(cat_dims)
+        fil = NormalFil(cat_dims, fil_groups)
+
+        one_hot_fil_result = one_hot_fil(X_train_oh)
+        fil_result = fil(one_hot_to_cat(X_train_oh))
+
+        self.assertTrue(torch.equal(one_hot_fil_result, fil_result))
+
+
 if __name__ == '__main__':
     unittest.main()
