@@ -56,10 +56,10 @@ class FeatureInteractionLayer(nn.Module):
             radix_tensor = torch.tensor(radix, device=x_cat.device).unsqueeze(0)
             idx = (x * radix_tensor).sum(dim=1)  # (B,)
             out.scatter_(1, (idx + offset).unsqueeze(1), 1.0)
-        splits = torch.split(out, self.group_splits, dim=1)
-        out_splits = []
         if len(self.group_layers) == 0:
             return out
+        splits = torch.split(out, self.group_splits, dim=1)
+        out_splits = []
         for split, group_layers in zip(splits, self.group_layers):
             for layer in group_layers:
                 split = layer(split)
