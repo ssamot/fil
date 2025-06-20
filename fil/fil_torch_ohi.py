@@ -16,42 +16,51 @@ def count_parameters(model):
 
 
 class FeatureInteractionLayer(nn.Module):
-    def __init__(self, cat_dims, groups):
+    def __init__(self, cat_split_dims, cat_real_dims, groups):
         """
         Args:
             groups: list like [[(i1, s1), (i2, s2), ...), max_order], ...] with start index for each variable in the oh encoding and size of the oh encoding
         """
         super().__init__()
-        self.cat_dims = cat_dims
-        self.oh_indexes = [0] + list(itertools.accumulate(self.cat_dims))
+        self.cat_real_dims = cat_real_dims
+        self.cat_split_dims = cat_split_dims
         self.groups = groups
 
-    def forward(self, x_oh):
-        batch_size = x_oh.size(0)
-        outputs = []
+        self.total_output_dim = 0
+        self.lookup_params = []  # stores (input_idxs, radix_multipliers, dim, offset)
 
-
-        for group, max_order in self.groups:
-            one_hots_group = []
-            for idx in group:
-                oh_idx = self.oh_indexes[idx]
-                cat_dim = self.cat_dims[idx]
-                one_hots_group.append(x_oh[:, oh_idx:oh_idx+cat_dim].float())
-
-            group_output = []
-
-            #for r in range(max_order, max_order + 1):
+        for group, max_order in groups:
             for combo in itertools.combinations(range(len(group)), max_order):
-                #print(combo)
-                tensors = [one_hots_group[i] for i in combo]
-                interaction = reduce(lambda a, b: torch.einsum("bi,bj->bij", a, b).reshape(batch_size, -1), tensors)
-                #print(interaction)
-                group_output.append(interaction)
+                idxs = [group[i] for i in combo]
+                sizes = [self.cat_real_dims[i] for i in idxs]
+                dim = int(np.prod(sizes))
+                radix = [int(np.prod(sizes[i + 1:])) for i in range(len(sizes))]
+                offset = self.total_output_dim
+                self.lookup_params.append((idxs, radix, dim, offset))
+                self.total_output_dim += dim
 
-            outputs.append(torch.cat(group_output, dim=1))
-        #print(len(outputs[0]))
-        #exit()
-        return torch.cat(outputs, dim=1)
+    def forward(self, x_oh):
+        x_cat = self.one_hot_to_categorical(x_oh)
+        B = x_cat.size(0)
+        out = torch.zeros(B, self.total_output_dim, device=x_cat.device)
+
+        for input_idxs, radix, dim, offset in self.lookup_params:
+            x = x_cat[:, input_idxs]  # (B, r)
+            radix_tensor = torch.tensor(radix, device=x_cat.device).unsqueeze(0)
+            idx = (x * radix_tensor).sum(dim=1)  # (B,)
+            out.scatter_(1, (idx + offset).unsqueeze(1), 1.0)
+
+        return out
+    
+    def one_hot_to_categorical(self, x):
+        feature_chunks = torch.split(x, self.cat_split_dims, dim=1)
+        categorical_indices = []
+        for chunk, cat_dim in zip(feature_chunks, self.cat_split_dims):
+            max_vals, indices = torch.max(chunk, dim=1)
+            missing_mask = (max_vals == 0)
+            indices[missing_mask] = cat_dim
+            categorical_indices.append(indices)
+        return torch.stack(categorical_indices, dim=1)
 
 class CategoricalInteractionModel(nn.Module):
     def __init__(self, cat_dims, groups):

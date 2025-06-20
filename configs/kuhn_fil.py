@@ -12,7 +12,8 @@ memory_capacity=1e6
 policy_network_train_steps=500
 advantage_network_train_steps=50
 reinitialize_advantage_networks=False
-cat_dims=[2,3,2,2,2]
+cat_split_dims=[2,3,2,2,2]
+cat_real_dims=[2,3,3,3,3]
 fil_groups=[
     [(1, 2), 2],
     [(1, 3), 2],
