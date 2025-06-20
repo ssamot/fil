@@ -12,10 +12,27 @@ memory_capacity=1e6
 policy_network_train_steps=10
 advantage_network_train_steps=100
 reinitialize_advantage_networks=False
-#fil_groups=[[((0, 2), (2, 6), (8, 6)), 3], [((14, 2), (16, 2), (18, 2), (20, 2)), 3], [((22, 2), (24, 2), (26, 2), (28, 2)), 3]] # splits to (player, card, card), (first betting round), (second betting round)
-#fil_groups=[[((0, 2), (2, 6), (8, 6),(14, 2), (16, 2), (18, 2), (20, 2), (22, 2), (24, 2), (26, 2), (28, 2)), 3]] # splits to (player, card, card), (first betting round), (second betting round)
-fil_groups=[[((0, 2), (2, 6), (8, 6)), 2],
-            [((14, 2), (16, 2), (18, 2), (20, 2)), 2],
-            [((22, 2), (24, 2), (26, 2), (28, 2)), 2]] # splits to (player, card, card), (first betting round), (second betting round)
-
-# fil_groups=[[(0, 2, 8), 3], [(14, 16, 18, 20, 22, 24, 26, 28), 3]] # betting rounds together
+cat_split_dims=[2,6,6,2,2,2,2,2,2,2,2]
+cat_real_dims=[2,6,7,3,3,3,3,3,3,3,3]
+fil_groups=[
+    [(1, 2, 3), 3],
+    [(1, 2, 4), 3],
+    [(1, 2, 5), 3],
+    [(1, 2, 6), 3],
+    [(1, 2, 7), 3],
+    [(1, 2, 8), 3],
+    [(1, 2, 9), 3],
+    [(1, 2, 10), 3],
+    [(1, 2), 2],
+] # this always uses hand and board with all the actions
+# fil_groups=[
+#     [(1, 3), 3],
+#     [(1, 4), 3],
+#     [(1, 5), 3],
+#     [(1, 6), 3],
+#     [(1, 2, 7), 3],
+#     [(1, 2, 8), 3],
+#     [(1, 2, 9), 3],
+#     [(1, 2, 10), 3],
+#     [(1, 2), 2],
+# ] # this uses only hand in combination with the actions from the first round where the board card was not yet dealt
