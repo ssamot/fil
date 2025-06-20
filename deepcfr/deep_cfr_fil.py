@@ -32,7 +32,8 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from tqdm import tqdm
-from fil import fil_torch_ohi
+from fil import fil_torch
+from fil import one_hot_to_cat
 
 from open_spiel.python import policy
 import pyspiel
@@ -105,6 +106,7 @@ class MLP(nn.Module):
                input_size,
                hidden_sizes,
                output_size,
+               cat_dims,
                groups,
                activate_final=False):
     """Create the MLP.
@@ -118,7 +120,8 @@ class MLP(nn.Module):
 
     super(MLP, self).__init__()
 
-    self.encoder = fil_torch_ohi.FeatureInteractionLayer(groups)
+    self.one_hot_to_cat = one_hot_to_cat.OneHotToCategoricalLayer(cat_dims=cat_dims)
+    self.encoder = fil_torch.FeatureInteractionLayer(cat_dims, groups)
     dummy = torch.zeros((1, input_size), dtype=torch.long)
     with torch.no_grad():
         next_layer_input = self.encoder(dummy).shape[1]
@@ -135,16 +138,12 @@ class MLP(nn.Module):
             out_size=output_size,
             activate_relu=activate_final))
     
-    self.model = nn.ModuleList([self.encoder] + self._layers)
+    self.model = nn.ModuleList([self.one_hot_to_cat, self.encoder] + self._layers)
 
   def forward(self, x):
 
-    features = self.model[0]
-    linear_layer = self.model[1]
-
-    x = features(x)
-    #print(x.shape)
-    x = linear_layer(x)
+    for layer in self.model:
+      x = layer(x)
 
     return x
 
@@ -235,6 +234,7 @@ class DeepCFRSolver(policy.Policy):
                policy_network_train_steps: int = 1,
                advantage_network_train_steps: int = 1,
                reinitialize_advantage_networks: bool = True,
+               cat_dims = [],
                fil_groups = []):
     """Initialize the Deep CFR algorithm.
 
@@ -275,13 +275,14 @@ class DeepCFRSolver(policy.Policy):
     self._reinitialize_advantage_networks = reinitialize_advantage_networks
     self._num_actions = game.num_distinct_actions()
     self._iteration = 1
+    self._cat_dims = cat_dims
     self._fil_groups = fil_groups
 
     # Define strategy network, loss & memory.
     self._strategy_memories = ReservoirBuffer(memory_capacity)
     self._policy_network = MLP(self._embedding_size,
                                list(policy_network_layers),
-                               self._num_actions, self._fil_groups)
+                               self._num_actions, self._cat_dims, self._fil_groups)
     # Illegal actions are handled in the traversal code where expected payoff
     # and sampled regret is computed from the advantage networks.
     self._policy_sm = nn.Softmax(dim=-1)
@@ -295,7 +296,7 @@ class DeepCFRSolver(policy.Policy):
     ]
     self._advantage_networks = [
         MLP(self._embedding_size, list(advantage_network_layers),
-            self._num_actions, self._fil_groups) for _ in range(self._num_players)
+            self._num_actions, self._cat_dims, self._fil_groups) for _ in range(self._num_players)
     ]
     self._loss_advantages = nn.MSELoss(reduction="mean")
     self._optimizer_advantages = []

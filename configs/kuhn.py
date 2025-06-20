@@ -1,5 +1,5 @@
 game_name = "kuhn_poker"
-num_iterations = 100
+num_iterations = 1000
 num_traversals = 25
 log_frequency = 1
 results_file_base = "../results/kuhn_"
@@ -11,4 +11,4 @@ batch_size_strategy=64
 memory_capacity=1e6
 policy_network_train_steps=500
 advantage_network_train_steps=50
-reinitialize_advantage_networks=True
+reinitialize_advantage_networks=False

@@ -6,7 +6,7 @@ from functools import reduce
 from sklearn.metrics import accuracy_score
 import numpy as np
 import random
-from fil_main import generate_data
+from fil.fil_main import generate_data
 from tqdm import tqdm
 
 def count_parameters(model):
@@ -24,15 +24,14 @@ class FeatureInteractionLayer(nn.Module):
         self.lookup_params = []  # stores (input_idxs, radix_multipliers, dim, offset)
 
         for group, max_order in groups:
-            for r in range(1, max_order + 1):
-                for combo in itertools.combinations(range(len(group)), r):
-                    idxs = [group[i] for i in combo]
-                    sizes = [cat_dims[i] for i in idxs]
-                    dim = int(np.prod(sizes))
-                    radix = [int(np.prod(sizes[i + 1:])) for i in range(len(sizes))]
-                    offset = self.total_output_dim
-                    self.lookup_params.append((idxs, radix, dim, offset))
-                    self.total_output_dim += dim
+            for combo in itertools.combinations(range(len(group)), max_order):
+                idxs = [group[i] for i in combo]
+                sizes = [cat_dims[i] for i in idxs]
+                dim = int(np.prod(sizes))
+                radix = [int(np.prod(sizes[i + 1:])) for i in range(len(sizes))]
+                offset = self.total_output_dim
+                self.lookup_params.append((idxs, radix, dim, offset))
+                self.total_output_dim += dim
 
     def forward(self, x_cat):
         B = x_cat.size(0)

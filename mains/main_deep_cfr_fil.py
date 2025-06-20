@@ -60,6 +60,7 @@ def main(unused_argv):
     policy_network_train_steps=config.policy_network_train_steps,
     advantage_network_train_steps=config.advantage_network_train_steps,
     reinitialize_advantage_networks=config.reinitialize_advantage_networks,
+    cat_dims=config.cat_dims,
     fil_groups=config.fil_groups)
   
   results = {}
