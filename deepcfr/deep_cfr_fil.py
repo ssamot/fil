@@ -124,6 +124,7 @@ class MLP(nn.Module):
     self.encoder = fil_torch.FeatureInteractionLayer(cat_dims, groups)
     dummy = torch.zeros((1, input_size), dtype=torch.long)
     with torch.no_grad():
+        dummy = self.one_hot_to_cat(dummy)
         next_layer_input = self.encoder(dummy).shape[1]
 
     self._layers = []
