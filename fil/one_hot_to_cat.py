@@ -14,7 +14,13 @@ class OneHotToCategoricalLayer(nn.Module):
 
     def forward(self, x):
         feature_chunks = torch.split(x, self._cat_dims, dim=1)
-        categorical_indices = [torch.argmax(chunk, dim=1) for chunk in feature_chunks]
+        categorical_indices = []
+        for chunk in feature_chunks:
+            max_vals, indices = torch.max(chunk, dim=1)
+            missing_mask = (max_vals == 0)
+            indices[missing_mask] = -1
+            categorical_indices.append(indices)
+
         return torch.stack(categorical_indices, dim=1)
     
 # === Example Usage ===
@@ -22,7 +28,7 @@ class OneHotToCategoricalLayer(nn.Module):
 if __name__ == "__main__":
     # Input tensor (batch_size, num_features)
     x = torch.tensor([
-        [0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0],
+        [0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0],
         [1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0]
     ])
 
