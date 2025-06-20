@@ -172,3 +172,4 @@ scratch/
 data/processed
 dummy/
 *.log
+.vscode/
