@@ -105,6 +105,7 @@ class MLP(nn.Module):
                input_size,
                hidden_sizes,
                output_size,
+               cat_dims,
                groups,
                activate_final=False):
     """Create the MLP.
@@ -118,7 +119,7 @@ class MLP(nn.Module):
 
     super(MLP, self).__init__()
 
-    self.encoder = fil_torch_ohi.FeatureInteractionLayer(groups)
+    self.encoder = fil_torch_ohi.FeatureInteractionLayer(cat_dims, groups)
     dummy = torch.zeros((1, input_size), dtype=torch.long)
     with torch.no_grad():
         next_layer_input = self.encoder(dummy).shape[1]
@@ -235,6 +236,7 @@ class DeepCFRSolver(policy.Policy):
                policy_network_train_steps: int = 1,
                advantage_network_train_steps: int = 1,
                reinitialize_advantage_networks: bool = True,
+               cat_dims = [],
                fil_groups = []):
     """Initialize the Deep CFR algorithm.
 
@@ -275,13 +277,14 @@ class DeepCFRSolver(policy.Policy):
     self._reinitialize_advantage_networks = reinitialize_advantage_networks
     self._num_actions = game.num_distinct_actions()
     self._iteration = 1
+    self._cat_dims = cat_dims
     self._fil_groups = fil_groups
 
     # Define strategy network, loss & memory.
     self._strategy_memories = ReservoirBuffer(memory_capacity)
     self._policy_network = MLP(self._embedding_size,
                                list(policy_network_layers),
-                               self._num_actions, self._fil_groups)
+                               self._num_actions, self._cat_dims, self._fil_groups)
     # Illegal actions are handled in the traversal code where expected payoff
     # and sampled regret is computed from the advantage networks.
     self._policy_sm = nn.Softmax(dim=-1)
@@ -295,7 +298,7 @@ class DeepCFRSolver(policy.Policy):
     ]
     self._advantage_networks = [
         MLP(self._embedding_size, list(advantage_network_layers),
-            self._num_actions, self._fil_groups) for _ in range(self._num_players)
+            self._num_actions, self._cat_dims, self._fil_groups) for _ in range(self._num_players)
     ]
     self._loss_advantages = nn.MSELoss(reduction="mean")
     self._optimizer_advantages = []

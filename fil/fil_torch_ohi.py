@@ -16,12 +16,14 @@ def count_parameters(model):
 
 
 class FeatureInteractionLayer(nn.Module):
-    def __init__(self, groups):
+    def __init__(self, cat_dims, groups):
         """
         Args:
             groups: list like [[(i1, s1), (i2, s2), ...), max_order], ...] with start index for each variable in the oh encoding and size of the oh encoding
         """
         super().__init__()
+        self.cat_dims = cat_dims
+        self.oh_indexes = [0] + list(itertools.accumulate(self.cat_dims))
         self.groups = groups
 
     def forward(self, x_oh):
@@ -31,8 +33,10 @@ class FeatureInteractionLayer(nn.Module):
 
         for group, max_order in self.groups:
             one_hots_group = []
-            for idx, cat_size in group:
-                one_hots_group.append(x_oh[:, idx:idx+cat_size].float())
+            for idx in group:
+                oh_idx = self.oh_indexes[idx]
+                cat_dim = self.cat_dims[idx]
+                one_hots_group.append(x_oh[:, oh_idx:oh_idx+cat_dim].float())
 
             group_output = []
 
