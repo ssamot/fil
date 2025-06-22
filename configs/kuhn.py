@@ -1,5 +1,5 @@
 game_name = "kuhn_poker"
-num_iterations = 100
+num_iterations = 1000
 num_traversals = 25
 log_frequency = 1
 results_file_base = "../results/kuhn_"

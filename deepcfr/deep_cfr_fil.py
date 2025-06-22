@@ -298,8 +298,8 @@ class DeepCFRSolver(policy.Policy):
     # and sampled regret is computed from the advantage networks.
     self._policy_sm = nn.Softmax(dim=-1)
     self._loss_policy = nn.MSELoss()
-    self._optimizer_policy = torch.optim.SGD(
-        self._policy_network.parameters(), lr=learning_rate, momentum=0.5)
+    self._optimizer_policy = torch.optim.Adam(
+        self._policy_network.parameters(), lr=learning_rate)
 
     # Define advantage network, loss & memory. (One per player)
     self._advantage_memories = [
@@ -313,8 +313,8 @@ class DeepCFRSolver(policy.Policy):
     self._optimizer_advantages = []
     for p in range(self._num_players):
       self._optimizer_advantages.append(
-          torch.optim.SGD(
-              self._advantage_networks[p].parameters(), lr=learning_rate, momentum=0.5))
+          torch.optim.Adam(
+              self._advantage_networks[p].parameters(), lr=learning_rate))
     self._learning_rate = learning_rate
 
   @property

@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import itertools
 from functools import reduce
+
 from sklearn.metrics import accuracy_score
 import numpy as np
 import random
@@ -16,33 +17,57 @@ def count_parameters(model):
 
 
 class FeatureInteractionLayer(nn.Module):
-    def __init__(self, cat_dims, groups):
+    def __init__(self, cat_dims, groups, emb_dim=8):
+        """
+        cat_dims: list of int — cardinality of each categorical feature
+        groups: list of (list of feature indices) — groups of features to interact
+        emb_dim: int — embedding dimension for each feature
+        """
         super().__init__()
         self.cat_dims = cat_dims
         self.groups = groups
-        self.total_output_dim = 0
-        self.lookup_params = []  # stores (input_idxs, radix_multipliers, dim, offset)
+        self.emb_dim = emb_dim
 
-        for group, max_order in groups:
-            for combo in itertools.combinations(range(len(group)), max_order):
-                idxs = [group[i] for i in combo]
-                sizes = [cat_dims[i] for i in idxs]
-                dim = int(np.prod(sizes))
-                radix = [int(np.prod(sizes[i + 1:])) for i in range(len(sizes))]
-                offset = self.total_output_dim
-                self.lookup_params.append((idxs, radix, dim, offset))
-                self.total_output_dim += dim
+        # One embedding per categorical feature
+        self.embeddings = nn.ModuleList([
+            nn.Embedding(num_embeddings=card, embedding_dim=emb_dim)
+            for card in cat_dims
+        ])
+
+        # One scalar projection per feature
+        self.scalar_projections = nn.ModuleList([
+            nn.Linear(emb_dim, 1) for _ in cat_dims
+        ])
+
+        # For tracking output dim
+        self.total_output_dim = len(groups) * 2  # max + product per group
 
     def forward(self, x_cat):
+        """
+        x_cat: LongTensor of shape (B, num_cat_features)
+        Returns: Tensor of shape (B, total_output_dim)
+        """
         B = x_cat.size(0)
-        out = torch.zeros(B, self.total_output_dim, device=x_cat.device)
+        group_outputs = []
 
-        for input_idxs, radix, dim, offset in self.lookup_params:
-            x = x_cat[:, input_idxs]  # (B, r)
-            radix_tensor = torch.tensor(radix, device=x_cat.device).unsqueeze(0)
-            idx = (x * radix_tensor).sum(dim=1)  # (B,)
-            out.scatter_(1, (idx + offset).unsqueeze(1), 1.0)
+        for group, _ in self.groups:
+            # Get embeddings and project each to scalar
+            projected_scalars = []
+            for idx in group:
+                emb = self.embeddings[idx](x_cat[:, idx])         # (B, emb_dim)
+                score = self.scalar_projections[idx](emb)         # (B, 1)
+                projected_scalars.append(score)
 
+            group_tensor = torch.cat(projected_scalars, dim=1)    # (B, group_size)
+
+            # Compute max and product over the group
+            max_val = group_tensor.max(dim=1, keepdim=True).values     # (B, 1)
+            prod_val = group_tensor.prod(dim=1, keepdim=True)          # (B, 1)
+
+            group_outputs.append(max_val)
+            group_outputs.append(prod_val)
+
+        out = torch.cat(group_outputs, dim=1)  # (B, total_output_dim)
         return out
 
 class CategoricalInteractionModel(nn.Module):

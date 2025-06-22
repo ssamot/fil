@@ -99,6 +99,8 @@ test_fil:
 	CUDA_VISIBLE_DEVICES="1" KERAS_BACKEND="jax" PYTHONPATH=. $(PYTHON_INTERPRETER) fil/fi_test.py
 fil_torch:
 	CUDA_VISIBLE_DEVICES="1" KERAS_BACKEND="jax" PYTHONPATH=. $(PYTHON_INTERPRETER) fil/fil_torch.py
+fil_torch_emb:
+	CUDA_VISIBLE_DEVICES="1" KERAS_BACKEND="jax" PYTHONPATH=. $(PYTHON_INTERPRETER) fil/fil_torch_emb.py
 
 
 kuhn:
