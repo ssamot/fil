@@ -50,7 +50,7 @@ StrategyMemory = collections.namedtuple(
     "StrategyMemory", "info_state iteration strategy_action_probs")
 
 def create_regressor():
-  return MultiOutputRegressor(LinearRegression())
+  return MultiOutputRegressor(lgb.LGBMRegressor(verbose=-1))
 
 class ReservoirBuffer(object):
   """Allows uniform sampling over a stream of data.
@@ -337,8 +337,11 @@ class DeepCFRSolver(policy.Policy):
     Returns:
       (float) The average loss over the advantage network.
     """
-    
-    samples = self._advantage_memories[player]
+    num_samples = self._batch_size_advantage * self._advantage_network_train_steps
+    if num_samples < len(self._advantage_memories[player]):
+      samples = self._advantage_memories[player].sample(num_samples)
+    else:
+      samples = self._advantage_memories[player]
 
     if not samples:
       return None
@@ -349,13 +352,13 @@ class DeepCFRSolver(policy.Policy):
     for s in samples:
       info_states.append(s.info_state)
       advantages.append(s.advantage)
-      iterations.append([s.iteration])
+      iterations.append(s.iteration)
 
     X = np.array(info_states)
-    y = np.array(advantages) * np.array(iterations)  # apply weighting
+    y = np.array(advantages)  # apply weighting
 
     model = create_regressor()
-    model.fit(X, y)
+    model.fit(X, y, sample_weight=iterations)
 
     self._advantage_models[player] = model
 
@@ -367,20 +370,25 @@ class DeepCFRSolver(policy.Policy):
     Returns:
       (float) The average loss obtained on this batch of transitions or `None`.
     """
-    samples = self._strategy_memories
+    num_samples = self._batch_size_strategy * self._policy_network_train_steps
+    if num_samples < len(self._strategy_memories):
+      samples = self._strategy_memories.sample(num_samples)
+    else:
+      samples = self._strategy_memories
+    
     info_states = []
     action_probs = []
     iterations = []
     for s in samples:
       info_states.append(s.info_state)
       action_probs.append(s.strategy_action_probs)
-      iterations.append([s.iteration])
+      iterations.append(s.iteration)
 
     X = np.array(info_states)
-    y = np.array(action_probs) * np.array(iterations)  # apply weighting
+    y = np.array(action_probs)  # apply weighting
 
     model = create_regressor()
-    model.fit(X, y)
+    model.fit(X, y, sample_weight=np.array(iterations))
 
     self._policy_model = model
 

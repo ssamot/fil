@@ -15,10 +15,10 @@ class OneHotToCategoricalLayer(nn.Module):
     def forward(self, x):
         feature_chunks = torch.split(x, self._cat_dims, dim=1)
         categorical_indices = []
-        for chunk in feature_chunks:
+        for cat_dim, chunk in zip(self._cat_dims, feature_chunks):
             max_vals, indices = torch.max(chunk, dim=1)
             missing_mask = (max_vals == 0)
-            indices[missing_mask] = -1
+            indices[missing_mask] = cat_dim
             categorical_indices.append(indices)
 
         return torch.stack(categorical_indices, dim=1)
