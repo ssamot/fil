@@ -19,25 +19,26 @@ class Embedder(nn.Module):
           List of tensors (batch_size,) — one scalar per input per batch element
         """
         outputs = []
-        for i, (input_cat, linear_layer) in enumerate(zip(inputs, self.convert_layers)):
-            one_hot = F.one_hot(input_cat, num_classes=self.num_categories_list[i]).float()
+        for i, linear_layer in enumerate(self.convert_layers):
+            one_hot = F.one_hot(inputs[:,i], num_classes=self.num_categories_list[i]).float()
             scalar = linear_layer(one_hot).squeeze(-1)  # shape (batch_size,)
             outputs.append(scalar)
-        return outputs
+        return torch.stack(outputs, dim=1)
 
 
 # Example usage
-batch_size = 3
-num_categories_list = [5, 10, 3]
+if __name__ == "__main__":
+    batch_size = 3
+    num_categories_list = [5, 10, 3]
 
-model = Embedder(num_categories_list)
+    model = Embedder(num_categories_list)
 
-inputs = [
-    torch.tensor([1, 0, 4]),
-    torch.tensor([3, 9, 0]),
-    torch.tensor([2, 1, 2])
-]
+    inputs = [
+        torch.tensor([1, 0, 4]),
+        torch.tensor([3, 9, 0]),
+        torch.tensor([2, 1, 2])
+    ]
 
-outputs = model(inputs)
-for i, out in enumerate(outputs):
-    print(f"Output {i}:", out)
+    outputs = model(inputs)
+    for i, out in enumerate(outputs):
+        print(f"Output {i}:", out)

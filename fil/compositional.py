@@ -48,6 +48,22 @@ class Avg:
         return (x + y) / 2
     def __repr__(self):
         return "avg"
+    
+def string_to_function(name):
+    if name == repr(Add()):
+        return Add()
+    elif name == repr(Mul()):
+        return Mul()
+    elif name == repr(Min()):
+        return Min()
+    elif name == repr(Max()):
+        return Max()
+    elif name == repr(SoftIfThenElse()):
+        return SoftIfThenElse()
+    elif name == repr(Avg()):
+        return Avg()
+    else:
+        raise ValueError("Function name " + name + " is not supported.")
 
 # class SoftMajorityVote:
 #     arity = 3
@@ -88,6 +104,10 @@ class CompositionalFeatureLayer(nn.Module):
             depth (int): Maximum depth of function composition.
         """
         super().__init__()
+
+        if isinstance(functions[0], str):
+            functions = [string_to_function(s) for s in functions]
+
         self.input_indices = input_indices
         self.functions = functions
         self.depth = depth
@@ -132,23 +152,23 @@ class CompositionalFeatureLayer(nn.Module):
 if __name__ == "__main__":
     # Input tensor (batch_size, num_features)
     x = torch.tensor([
-        [1.0, 2.0, 3.0],
-        [4.0, 5.0, 6.0]
+        [1.0, 2.0, 3.0, 5.0, 6],
+        [4.0, 5.0, 6.0, 5.0, 6]
     ])
 
     # Define function objects
-    functions = [Add(), Mul(), Min(), Max(), SoftIfThenElse()]
+    functions = [Mul()]
 
     # Construct the layer
-    layer = CompositionalFeatureLayer(input_indices=[0, 1], functions=functions, depth=2)
+    layer = CompositionalFeatureLayer(input_indices=[0, 1, 2,3,4], functions=functions, depth=3)
 
     # Forward pass
     out = layer(x)
 
     print("Output shape:", out.shape)
-    print("Generated features:\n", out)
+    #print("Generated features:\n", out)
 
     # Print feature names
-    print("\nFeature descriptions:")
-    for desc in layer.feature_descriptions:
-        print(desc)
+    # print("\nFeature descriptions:")
+    # for desc in layer.feature_descriptions:
+    #     print(desc)
