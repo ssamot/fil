@@ -75,8 +75,8 @@ class LinearPlusLGBMRegressor(BaseEstimator, RegressorMixin):
     self.linear_model = LinearRegression()
 
     # self.lgbm_model = DecisionTreeRegressor(max_depth=2)
-    #self.lgbm_model = LGBMRegressor(verbose=-1, n_jobs=1, subsample=0.5, learning_rate=0.1, n_estimators=300)
-    self.lgbm_model = RandomForestRegressor()
+    self.lgbm_model = LGBMRegressor(verbose=-1, n_jobs=1, subsample=0.5, learning_rate=0.1, n_estimators=300)
+    #self.lgbm_model = RandomForestRegressor()
 
     #self.lgbm_model = KernelRidge()
 
