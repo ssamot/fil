@@ -112,6 +112,12 @@ kuhn_fil_torch:
 leduc_fil_torch:
 	PYTHONPATH=. $(PYTHON_INTERPRETER) mains/main_deep_cfr_fil.py --config=../configs/leduc_fil.py
 
+leduc_lgbm:
+	PYTHONPATH=. $(PYTHON_INTERPRETER) mains/main_deep_cfr_lgb.py --config=../configs/leduc.py
+
+kuhn_lgbm:
+	PYTHONPATH=. $(PYTHON_INTERPRETER) mains/main_deep_cfr_lgb.py --config=../configs/kuhn.py
+
 
 leduc_torch:
 	PYTHONPATH=. $(PYTHON_INTERPRETER)  mains/main_deep_cfr_pytorch.py --config=../configs/leduc.py

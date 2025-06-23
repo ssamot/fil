@@ -49,8 +49,58 @@ AdvantageMemory = collections.namedtuple(
 StrategyMemory = collections.namedtuple(
     "StrategyMemory", "info_state iteration strategy_action_probs")
 
+from sklearn.linear_model import LinearRegression
+from lightgbm import LGBMRegressor
+from sklearn.base import BaseEstimator, RegressorMixin
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.dummy import DummyRegressor
+from sklearn.base import BaseEstimator, RegressorMixin
+from sklearn.linear_model import LinearRegression
+from lightgbm import LGBMRegressor
+from sklearn.model_selection import GridSearchCV, KFold
+from sklearn.metrics import make_scorer, mean_squared_error, r2_score
+
+import numpy as np
+from sklearn.base import BaseEstimator, RegressorMixin
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import GridSearchCV, KFold
+from sklearn.metrics import make_scorer, mean_squared_error, r2_score
+from sklearn.kernel_ridge import KernelRidge
+
+
+class LinearPlusLGBMRegressor(BaseEstimator, RegressorMixin):
+  def __init__(self):
+    # self.linear_model = DummyRegressor()
+    self.linear_model = LinearRegression()
+
+    # self.lgbm_model = DecisionTreeRegressor(max_depth=2)
+    #self.lgbm_model = LGBMRegressor(verbose=-1, n_jobs=1, subsample=0.5, learning_rate=0.1, n_estimators=300)
+    self.lgbm_model = RandomForestRegressor()
+
+    #self.lgbm_model = KernelRidge()
+
+  def fit(self, X, y, sample_weight=None):
+    # Fit linear model with sample weights if provided
+    if sample_weight is not None:
+      self.linear_model.fit(X, y)
+    else:
+      self.linear_model.fit(X, y)
+
+    linear_pred = self.linear_model.predict(X)
+    residuals = y - linear_pred
+
+    # Fit LGBM on residuals with sample weights if provided
+    self.lgbm_model.fit(X, residuals)
+    return self
+
+  def predict(self, X):
+    linear_pred = self.linear_model.predict(X)
+    residual_pred = self.lgbm_model.predict(X)
+    return linear_pred + residual_pred
+
 def create_regressor():
-  return MultiOutputRegressor(lgb.LGBMRegressor(verbose=-1))
+  return MultiOutputRegressor(LinearPlusLGBMRegressor())
 
 class ReservoirBuffer(object):
   """Allows uniform sampling over a stream of data.
