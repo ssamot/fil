@@ -174,3 +174,5 @@ dummy/
 *.log
 
 cluster_stuff/
+
+slurm*
