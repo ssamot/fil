@@ -12,3 +12,4 @@ memory_capacity=1e6
 policy_network_train_steps=5000
 advantage_network_train_steps=750
 reinitialize_advantage_networks=True
+cat_dims=[2,6,6,2,2,2,2,2,2,2,2]
