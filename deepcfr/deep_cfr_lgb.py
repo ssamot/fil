@@ -73,17 +73,12 @@ class LinearPlusLGBMRegressor(BaseEstimator, RegressorMixin):
   def __init__(self):
     # self.linear_model = DummyRegressor()
     self.linear_model = LinearRegression()
-
-    # self.lgbm_model = DecisionTreeRegressor(max_depth=2)
-    self.lgbm_model = LGBMRegressor(verbose=-1, n_jobs=1, subsample=0.5, learning_rate=0.1, n_estimators=300)
-    #self.lgbm_model = RandomForestRegressor()
-
-    #self.lgbm_model = KernelRidge()
+    self.lgbm_model = LGBMRegressor(verbose=-1, n_jobs=1, subsample=0.5, learning_rate=0.1, n_estimators=800)
 
   def fit(self, X, y, sample_weight=None):
     # Fit linear model with sample weights if provided
     if sample_weight is not None:
-      self.linear_model.fit(X, y)
+      self.linear_model.fit(X, y, sample_weight=sample_weight)
     else:
       self.linear_model.fit(X, y)
 
@@ -91,7 +86,7 @@ class LinearPlusLGBMRegressor(BaseEstimator, RegressorMixin):
     residuals = y - linear_pred
 
     # Fit LGBM on residuals with sample weights if provided
-    self.lgbm_model.fit(X, residuals)
+    self.lgbm_model.fit(X, residuals, sample_weight)
     return self
 
   def predict(self, X):
