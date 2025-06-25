@@ -67,35 +67,37 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.metrics import make_scorer, mean_squared_error, r2_score
 from sklearn.kernel_ridge import KernelRidge
+from sklearn.ensemble import BaggingRegressor
+from deepcfr.idr import InteractionDiscoveryRegressor
 
 
-class LinearPlusLGBMRegressor(BaseEstimator, RegressorMixin):
-  def __init__(self):
-    # self.linear_model = DummyRegressor()
-    self.linear_model = LinearRegression()
-    self.lgbm_model = LGBMRegressor(verbose=-1, n_jobs=1, subsample=0.5, learning_rate=0.1, n_estimators=800)
-
-  def fit(self, X, y, sample_weight=None):
-    # Fit linear model with sample weights if provided
-    if sample_weight is not None:
-      self.linear_model.fit(X, y, sample_weight=sample_weight)
-    else:
-      self.linear_model.fit(X, y)
-
-    linear_pred = self.linear_model.predict(X)
-    residuals = y - linear_pred
-
-    # Fit LGBM on residuals with sample weights if provided
-    self.lgbm_model.fit(X, residuals, sample_weight)
-    return self
-
-  def predict(self, X):
-    linear_pred = self.linear_model.predict(X)
-    residual_pred = self.lgbm_model.predict(X)
-    return linear_pred + residual_pred
+# class LinearPlusLGBMRegressor(BaseEstimator, RegressorMixin):
+#   def __init__(self):
+#     # self.linear_model = DummyRegressor()
+#     self.linear_model = LinearRegression()
+#     self.lgbm_model = LGBMRegressor(verbose=-1, n_jobs=1, subsample=0.5, learning_rate=0.1, n_estimators=800)
+#
+#   def fit(self, X, y, sample_weight=None):
+#     # Fit linear model with sample weights if provided
+#     if sample_weight is not None:
+#       self.linear_model.fit(X, y, sample_weight=sample_weight)
+#     else:
+#       self.linear_model.fit(X, y)
+#
+#     linear_pred = self.linear_model.predict(X)
+#     residuals = y - linear_pred
+#
+#     # Fit LGBM on residuals with sample weights if provided
+#     self.lgbm_model.fit(X, residuals, sample_weight)
+#     return self
+#
+#   def predict(self, X):
+#     linear_pred = self.linear_model.predict(X)
+#     residual_pred = self.lgbm_model.predict(X)
+#     return linear_pred + residual_pred
 
 def create_regressor():
-  return MultiOutputRegressor(LinearPlusLGBMRegressor())
+  return MultiOutputRegressor( InteractionDiscoveryRegressor(categorical_indices=[], encoding="onehot", coef_threshold=0.001))
 
 class ReservoirBuffer(object):
   """Allows uniform sampling over a stream of data.
@@ -416,11 +418,12 @@ class DeepCFRSolver(policy.Policy):
       (float) The average loss obtained on this batch of transitions or `None`.
     """
     num_samples = self._batch_size_strategy * self._policy_network_train_steps
+    #print(num_samples, len(self._strategy_memories), "mem")
     if num_samples < len(self._strategy_memories):
       samples = self._strategy_memories.sample(num_samples)
     else:
       samples = self._strategy_memories
-    
+    #print(len(samples))
     info_states = []
     action_probs = []
     iterations = []
@@ -433,6 +436,7 @@ class DeepCFRSolver(policy.Policy):
     y = np.array(action_probs)  # apply weighting
 
     model = create_regressor()
+    #
     model.fit(X, y, sample_weight=np.array(iterations))
 
     self._policy_model = model
