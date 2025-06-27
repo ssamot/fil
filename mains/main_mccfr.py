@@ -12,10 +12,8 @@ import tqdm
 def main(unused_argv):
     np.random.seed(0)
     game = pyspiel.load_game("leduc_poker")
-    es_solver = external_sampling_mccfr.ExternalSamplingSolver(
-        game, external_sampling_mccfr.AverageType.SIMPLE)
-
-    cfr_iterations = 100000
+    es_solver = external_sampling_mccfr.ExternalSamplingSolver(game, external_sampling_mccfr.AverageType.SIMPLE)
+    cfr_iterations = 1000
     with tqdm.tqdm(range(cfr_iterations)) as pbar:
         for i in range(cfr_iterations):
             es_solver.iteration()
@@ -26,7 +24,7 @@ def main(unused_argv):
             pbar.set_description(f"Iteration {i}")
             pbar.set_postfix({"exploitability": f"{conv:.6f}"})
 
-
+    conv = exploitability.nash_conv(game, es_solver.average_policy())
     print("Leduc2P, conv = {}".format(conv))
 
 if __name__ == "__main__":
