@@ -22,8 +22,8 @@ import pyspiel
 class ExternalSamplingSolver(mccfr.MCCFRSolverBase):
   """An implementation of external sampling MCCFR."""
 
-  def __init__(self, game, regressor_update_freq=np.inf, max_infostates=np.inf):
-    super().__init__(game, max_infostates)
+  def __init__(self, game, regressor_update_freq=np.inf, max_infostates=np.inf, reset_type=mccfr.ResetType.NONE):
+    super().__init__(game, max_infostates, reset_type)
     # How to average the strategy. The 'simple' type does the averaging for
     # player i + 1 mod num_players on player i's regret update pass; in two
     # players this corresponds to the standard implementation (updating the
@@ -86,9 +86,8 @@ class ExternalSamplingSolver(mccfr.MCCFRSolverBase):
     legal_actions = state.legal_actions()
     num_legal_actions = len(legal_actions)
 
-    infostate_info = self._lookup_infostate_info(state)
-    policy = self._regret_matching(infostate_info[mccfr.REGRET_INDEX],
-                                   legal_actions)
+    self._lookup_infostate_info(state)
+    policy = self._regret_matching(state, legal_actions)
 
     value = 0
     child_values = np.zeros(num_legal_actions, dtype=np.float64)

@@ -14,6 +14,7 @@
 
 """Python base module for the implementations of Monte Carlo Counterfactual Regret Minimization."""
 
+import enum
 import numpy as np
 from open_spiel.python import policy
 
@@ -22,6 +23,11 @@ from sklearn.multioutput import MultiOutputRegressor
 
 import warnings
 warnings.filterwarnings("ignore", message=".*does not have valid feature names.*")
+
+class ResetType(enum.Enum):
+  NONE = 0
+  REGRET = 1
+  ALL = 2
 
 REGRET_INDEX = 0
 AVG_POLICY_INDEX = 1
@@ -85,7 +91,7 @@ class AveragePolicy(policy.Policy):
 class MCCFRSolverBase(object):
   """A base class for both outcome MCCFR and external MCCFR."""
 
-  def __init__(self, game, max_infostates):
+  def __init__(self, game, max_infostates, reset_type):
     self._game = game
     self._infostates = {}  # infostate keys -> [regrets, avg strat]
     self._num_players = game.num_players()
@@ -94,6 +100,7 @@ class MCCFRSolverBase(object):
     self._max_infostates = max_infostates
     self._iteration = 0
     self._num_actions = game.num_distinct_actions()
+    self._reset_type = reset_type
 
   def _lookup_infostate_info(self, state):
     """Looks up an information set table for the given key.
@@ -153,7 +160,7 @@ class MCCFRSolverBase(object):
     return AveragePolicy(self._game, list(range(self._num_players)),
                          self._infostates)
 
-  def _regret_matching(self, regrets, legal_actions):
+  def _regret_matching(self, state, legal_actions):
     """Applies regret matching to get a policy.
 
     Args:
@@ -164,8 +171,18 @@ class MCCFRSolverBase(object):
       numpy array of the policy indexed by the index of legal action in the
       list.
     """
-    regrets = regrets[legal_actions]
+    info_state_key = state.information_state_string(state.current_player())
     num_legal_actions = len(legal_actions)
+    if info_state_key not in self._infostates:
+        if self._iteration > 0:
+            info_state_tensor = state.information_state_tensor(state.current_player())
+            regrets = self._regret_regressor.predict([info_state_tensor])[0]
+        else:
+            return np.ones(num_legal_actions, dtype=np.float64) / num_legal_actions # return uniform policy if the regressor is not yet trained
+
+    else:
+       regrets = self._infostates[info_state_key][REGRET_INDEX]
+    regrets = regrets[legal_actions]    
     positive_regrets = np.maximum(regrets,
                                   np.zeros(num_legal_actions, dtype=np.float64))
     sum_pos_regret = positive_regrets.sum()
@@ -184,5 +201,9 @@ class MCCFRSolverBase(object):
     X = np.asarray(X)
     self._regret_regressor.fit(X, y_regret)
     self._policy_regressor.fit(X, y_policy)
-    for infostate_info in self._infostates.values():
-       infostate_info[REGRET_INDEX] = self._regret_regressor.predict([infostate_info[INFOSTATE_TENSOR_INDEX]])[0]
+    # Reset infostate strutures based on the reset type
+    if self._reset_type == ResetType.REGRET:
+        for infostate_info in self._infostates.values():
+            infostate_info[REGRET_INDEX] = self._regret_regressor.predict([infostate_info[INFOSTATE_TENSOR_INDEX]])[0]
+    elif self._reset_type == ResetType.ALL:
+       self._infostates = {}
