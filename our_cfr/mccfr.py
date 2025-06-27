@@ -30,15 +30,15 @@ INFOSTATE_TENSOR_INDEX = 2
 def create_regressor():
   return MultiOutputRegressor(lgb.LGBMRegressor(
     n_estimators=1000,         # Number of boosting rounds
-    learning_rate=0.05,        # Small to avoid overshooting
-    num_leaves=128,            # Controls tree complexity
-    max_depth=10,              # Maximum tree depth
-    min_child_samples=30,      # Minimum samples per leaf
-    subsample=0.9,             # Row sampling
-    subsample_freq=1,
-    colsample_bytree=0.9,      # Feature sampling
-    reg_alpha=0.1,             # L1 regularization
-    reg_lambda=0.1,            # L2 regularization
+    #learning_rate=0.05,        # Small to avoid overshooting
+    #num_leaves=128,            # Controls tree complexity
+    #max_depth=10,              # Maximum tree depth
+    #min_child_samples=30,      # Minimum samples per leaf
+    #subsample=0.9,             # Row sampling
+    #subsample_freq=1,
+    #colsample_bytree=0.9,      # Feature sampling
+    #reg_alpha=0.1,             # L1 regularization
+    #reg_lambda=0.1,            # L2 regularization
     verbose=-1))
 
 class AveragePolicy(policy.Policy):
