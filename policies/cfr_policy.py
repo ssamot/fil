@@ -1,7 +1,7 @@
 from open_spiel.python.algorithms import exploitability, cfr
 from open_spiel.python import policy
 from utils.file_manipulation import load_from_file_json, save_to_file_json
-from policies.policy_manipulation_and_conversion import load_string_policy_from_file_for_game, one_hot_encode_policy, create_categorical
+from policies.policy_manipulation_and_conversion import load_string_policy_from_file_for_game, one_hot_encode_policy, create_categorical, create_sane
 
 import tqdm
 import sys
@@ -10,6 +10,17 @@ import pyspiel
 import os
 script_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(script_dir)
+
+def get_sane_cfr_policy(game_name):
+    file_name = "../data/cfr_sane_policy_" + game_name + ".json"
+    try:
+        return load_from_file_json(file_name)
+    except FileNotFoundError:
+        print("File not found - recalcuating from string policy")
+    sane_policy = create_sane(get_cfr_policy(game_name), game_name)
+    sane_string_policy = {str(key): value for key, value in sane_policy.items()}
+    save_to_file_json(sane_string_policy, file_name)
+    return sane_policy
 
 def get_categorical_cfr_policy(game_name):
     file_name = "../data/cfr_categorical_policy_" + game_name + ".json"
@@ -69,5 +80,4 @@ if __name__ == "__main__":
         sys.exit(1)
 
     solve_and_compute_exploitability(args[0])
-    get_one_hot_encoded_cfr_policy(args[0])
-    print(get_categorical_cfr_policy(args[0]))
+    print(get_sane_cfr_policy(args[0]))
