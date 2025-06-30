@@ -116,6 +116,12 @@ leduc_fil_torch:
 leduc_torch:
 	PYTHONPATH=. $(PYTHON_INTERPRETER)  mains/main_deep_cfr_pytorch.py --config=../configs/leduc.py
 
+leduc_es_cfr:
+	PYTHONPATH=. $(PYTHON_INTERPRETER)  mains/main_es_mccfr.py
+
+leduc_out_cfr:
+	PYTHONPATH=. $(PYTHON_INTERPRETER)  mains/main_mccfr_outcome_lgbm.py
+
 install_server_torch:
 	uv pip install torch torchvision torchaudio
 

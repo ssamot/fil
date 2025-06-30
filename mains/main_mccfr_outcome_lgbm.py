@@ -13,8 +13,8 @@ from our_cfr import outcome_sampling_mccfr_with_lgb, mccfr
 def main(unused_argv):
     np.random.seed(0)
     game = pyspiel.load_game("leduc_poker")
-    es_solver = outcome_sampling_mccfr_with_lgb.OutcomeSamplingSolver(game, regressor_update_freq=np.inf, max_infostates=np.inf, reset_type=mccfr.ResetType.NONE)
-    cfr_iterations = 1000
+    es_solver = outcome_sampling_mccfr_with_lgb.OutcomeSamplingSolver(game, regressor_update_freq=200, max_infostates=np.inf, reset_type=mccfr.ResetType.NONE)
+    cfr_iterations = 10000
     with tqdm.tqdm(range(cfr_iterations)) as pbar:
         for i in range(cfr_iterations):
             es_solver.iteration()
