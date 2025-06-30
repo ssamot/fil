@@ -13,10 +13,10 @@ os.chdir(script_dir)
 
 def get_sane_cfr_policy(game_name):
     file_name = "../data/cfr_sane_policy_" + game_name + ".json"
-    try:
-        return load_from_file_json(file_name)
-    except FileNotFoundError:
-        print("File not found - recalcuating from string policy")
+    # try:
+    #     return load_from_file_json(file_name)
+    # except FileNotFoundError:
+    #     print("File not found - recalcuating from string policy")
     sane_policy = create_sane(get_cfr_policy(game_name), game_name)
     sane_string_policy = {str(key): value for key, value in sane_policy.items()}
     save_to_file_json(sane_string_policy, file_name)
@@ -80,4 +80,5 @@ if __name__ == "__main__":
         sys.exit(1)
 
     solve_and_compute_exploitability(args[0])
-    print(get_sane_cfr_policy(args[0]))
+    print(len(get_string_cfr_policy(args[0])))
+    print(len(get_sane_cfr_policy(args[0])))

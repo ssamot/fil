@@ -14,11 +14,11 @@ def main(unused_argv):
     np.random.seed(0)
     game = pyspiel.load_game("leduc_poker")
     es_solver = external_sampling_mccfr_with_lgb.ExternalSamplingSolver(game, regressor_update_freq=np.inf, max_infostates=np.inf, reset_type=mccfr.ResetType.NONE)
-    cfr_iterations = 1000
+    cfr_iterations = 100000
     with tqdm.tqdm(range(cfr_iterations)) as pbar:
         for i in range(cfr_iterations):
             es_solver.iteration()
-            if ((i % 100) == 0):
+            if ((i % 1000) == 0):
                 conv = exploitability.nash_conv(game, es_solver.average_policy())
             pbar.update(1)
 

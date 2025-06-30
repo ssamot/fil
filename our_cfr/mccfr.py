@@ -20,6 +20,7 @@ from open_spiel.python import policy
 
 import lightgbm as lgb
 from sklearn.multioutput import MultiOutputRegressor
+from policies import policy_manipulation_and_conversion as conversion
 
 import warnings
 warnings.filterwarnings("ignore", message=".*does not have valid feature names.*")
@@ -32,6 +33,8 @@ class ResetType(enum.Enum):
 REGRET_INDEX = 0
 AVG_POLICY_INDEX = 1
 INFOSTATE_TENSOR_INDEX = 2
+
+infoset_key_map = {}
 
 def create_regressor():
   return MultiOutputRegressor(lgb.LGBMRegressor(
@@ -46,6 +49,15 @@ def create_regressor():
     #reg_alpha=0.1,             # L1 regularization
     #reg_lambda=0.1,            # L2 regularization
     verbose=-1))
+
+def get_infostate_key(state, game):
+     infoset_string = state.information_state_string(state.current_player())
+     if infoset_string in infoset_key_map:
+        return infoset_key_map[infoset_string]
+     game_name = str(game)[:-2]
+     new_key = tuple(conversion.convert_categorical_to_sane(conversion.convert_one_hot_to_cat(state.information_state_tensor(state.current_player()), game_name), game_name))
+     infoset_key_map[infoset_string] = new_key
+     return new_key
 
 class AveragePolicy(policy.Policy):
   """A policy object representing the average policy for MCCFR algorithms."""
@@ -77,7 +89,7 @@ class AveragePolicy(policy.Policy):
     if player_id is None:
       player_id = state.current_player()
     legal_actions = state.legal_actions()
-    info_state_key = state.information_state_string(player_id)
+    info_state_key = get_infostate_key(state, self.game)
     retrieved_infostate = self._infostates.get(info_state_key, None)
     if retrieved_infostate is None:
       return {a: 1 / len(legal_actions) for a in legal_actions}
@@ -102,6 +114,9 @@ class MCCFRSolverBase(object):
     self._num_actions = game.num_distinct_actions()
     self._reset_type = reset_type
 
+  def _get_infostate_key(self, state):
+     return get_infostate_key(state, self._game)
+
   def _lookup_infostate_info(self, state):
     """Looks up an information set table for the given key.
 
@@ -116,7 +131,7 @@ class MCCFRSolverBase(object):
         [num_legal_actions].
           The average is weighted using `my_reach`
     """
-    info_state_key = state.information_state_string(state.current_player())
+    info_state_key = self._get_infostate_key(state)
 
     retrieved_infostate = self._infostates.get(info_state_key, None)
     if retrieved_infostate is not None:
@@ -171,7 +186,7 @@ class MCCFRSolverBase(object):
       numpy array of the policy indexed by the index of legal action in the
       list.
     """
-    info_state_key = state.information_state_string(state.current_player())
+    info_state_key = self._get_infostate_key(state)
     num_legal_actions = len(legal_actions)
     if info_state_key not in self._infostates:
         if self._iteration > 0:

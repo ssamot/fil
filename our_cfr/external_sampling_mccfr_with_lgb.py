@@ -82,7 +82,7 @@ class ExternalSamplingSolver(mccfr.MCCFRSolverBase):
       return self._update_regrets(state.child(outcome), player)
 
     cur_player = state.current_player()
-    info_state_key = state.information_state_string(cur_player)
+    info_state_key = self._get_infostate_key(state)
     legal_actions = state.legal_actions()
     num_legal_actions = len(legal_actions)
 
