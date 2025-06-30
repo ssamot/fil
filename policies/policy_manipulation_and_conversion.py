@@ -46,8 +46,15 @@ def load_string_policy_from_file_for_game(file_name, game_name):
 def create_sane(policy: policy.TabularPolicy, game_name):
     cat_policy = create_categorical(policy, game_name)
     sane_policy = {}
+    conversion = {}
     for key in cat_policy:
+        new_key = tuple(convert_categorical_to_sane(key, game_name))
+        if new_key in conversion:
+            conversion[new_key].append(key)
+        else:
+            conversion[new_key] = [key]
         sane_policy[tuple(convert_categorical_to_sane(key, game_name))] = cat_policy[key]
+    print(conversion)
     return sane_policy
 
 def convert_categorical_to_sane(raw_state, game_name):
@@ -73,6 +80,8 @@ def convert_categorical_to_sane(raw_state, game_name):
         # Identify round
         public_card_dealt = public_card != NO_CARD
         features.append(public_card_dealt)
+
+        features.append(public_card)
         
         has_pair = 1 if private_card == public_card else 0
         
