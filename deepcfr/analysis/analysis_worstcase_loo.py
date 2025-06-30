@@ -16,8 +16,8 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-
-j_file = "data/cfr_categorical_policy_leduc_poker.json"
+#j_file = "data/cfr_categorical_policy_leduc_poker.json"
+j_file = "data/cfr_sane_policy_leduc_poker.json"
 
 with open(j_file) as f:
     d = json.load(f)
@@ -28,6 +28,7 @@ action_y = []
 
 for key in d:
     X = key
+    #print(X)
     actions = []
     for v in d[key]:
         action = v[0]
@@ -37,7 +38,9 @@ for key in d:
         #exit()
         actions.append(float(prob))
     X_inter = X.strip("()").split(",")  # ['1', ' 3', 'f ']
-    int_list = [int(item.strip()) for item in X_inter if item.strip().isdigit()]  # [1, 3]
+    X_inter = [l.rstrip() for l in X_inter]
+    #exit()
+    int_list = [float(item.strip()) for item in X_inter]  # [1, 3]
     #int_list +=[action]
     action_X.append(int_list)
     action_y.append(actions)
@@ -49,8 +52,7 @@ for key in d:
 X = np.array(action_X)
 y = np.array(action_y)
 
-# print(X.shape, y.shape)
-# exit()
+
 
 from fil.fil_main import FeatureInteractionTransformer, FeatureInteractionLayer
 
@@ -87,13 +89,13 @@ from lightgbm import LGBMClassifier
 
 #X = OneHotEncoder().fit_transform((X))
 # Initialize regressor and CV
-clf = MultiOutputRegressor(LGBMRegressor(verbose = -1, n_estimators=100, n_jobs=40))
+#clf = MultiOutputRegressor(LGBMRegressor(verbose = -1, n_estimators=1000, n_jobs=40))
 from sklearn.calibration import CalibratedClassifierCV
 
 
 #clf = LGBMClassifier(n_jobs=40, n_estimators=1000)
 
-#clf = RandomForestRegressor(n_jobs = 40, n_estimators=100)
+clf = RandomForestRegressor(n_jobs = 40, n_estimators=100)
 #cv = KFold(n_splits=20, shuffle=True, random_state=42)
 cv = LeaveOneOut()
 #cv = LeavePOut(p = 2)
@@ -156,11 +158,3 @@ print(f"True Value  : {np.round(global_worst_true, 3)}")
 print(f"Predicted   : {np.round(global_worst_pred, 3)}")
 print(f"Error       : {np.round(global_worst_error, 4)}")
 
-# Final summary (optional)
-print("\n" + "=" * 45)
-print("Global Worst Prediction Across All Folds")
-print("=" * 45)
-print(f"Sample Index: {global_worst_sample_idx}")
-print(f"True Value  : {np.round(global_worst_true, 3)}")
-print(f"Predicted   : {np.round(global_worst_pred, 3)}")
-print(f"Error       : {np.round(global_worst_error, 4)}")

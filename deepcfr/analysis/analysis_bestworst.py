@@ -26,6 +26,7 @@ from sklearn.preprocessing import OneHotEncoder
 
 
 j_file = "data/cfr_categorical_policy_leduc_poker.json"
+#j_file = "data/cfr_sane_policy_leduc_poker.json"
 
 with open(j_file) as f:
     d = json.load(f)
@@ -36,6 +37,7 @@ action_y = []
 
 for key in d:
     X = key
+    #print(X)
     actions = []
     for v in d[key]:
         action = v[0]
@@ -45,7 +47,9 @@ for key in d:
         #exit()
         actions.append(float(prob))
     X_inter = X.strip("()").split(",")  # ['1', ' 3', 'f ']
-    int_list = [int(item.strip()) for item in X_inter if item.strip().isdigit()]  # [1, 3]
+    X_inter = [l.rstrip() for l in X_inter]
+    #exit()
+    int_list = [float(item.strip()) for item in X_inter]  # [1, 3]
     #int_list +=[action]
     action_X.append(int_list)
     action_y.append(actions)
@@ -56,6 +60,8 @@ for key in d:
 
 X = np.array(action_X)
 y = np.array(action_y)
+
+
 
 import os
 import numpy as np
