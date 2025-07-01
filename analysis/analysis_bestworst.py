@@ -24,9 +24,28 @@ clf = MultiOutputRegressor(LGBMRegressor(verbose = -1, n_estimators=100, n_jobs=
 clf = MultiOutputRegressor(NuSVR())
 from sklearn.preprocessing import OneHotEncoder
 
+from open_spiel.python import policy
+import pyspiel
+from policies import policy_manipulation_and_conversion as conversion
+from open_spiel.python.algorithms import exploitability
 
-j_file = "data/cfr_categorical_policy_leduc_poker.json"
-#j_file = "data/cfr_sane_policy_leduc_poker.json"
+POLICY_TYPE = "cat"
+
+if POLICY_TYPE == "cat":
+    j_file = "data/cfr_categorical_policy_leduc_poker.json"
+elif POLICY_TYPE == "sane":
+    j_file = "data/cfr_sane_policy_leduc_poker.json"
+else:
+    raise ValueError("Policy type must be cat or sane, it is ", POLICY_TYPE)
+
+def state_to_key(state, game_name):
+    if POLICY_TYPE == "cat":
+        return conversion.convert_one_hot_to_cat(state.information_state_tensor(state.current_player()), game_name)
+    elif POLICY_TYPE == "sane":
+        return conversion.convert_categorical_to_sane(conversion.convert_one_hot_to_cat(state.information_state_tensor(state.current_player()), game_name), game_name)
+    else:
+        raise ValueError("Policy type must be cat or sane, it is ", POLICY_TYPE)
+    
 
 with open(j_file) as f:
     d = json.load(f)
@@ -56,8 +75,6 @@ for key in d:
 
         #print(int_list, float(prob))
 
-
-
 X = np.array(action_X)
 y = np.array(action_y)
 
@@ -78,13 +95,18 @@ cv = ShuffleSplit(n_splits=n_splits, test_size=test_size, random_state=42)
 best_local_worst_error = float("inf")
 save_path = f"./data/best_train_indices_fold.csv"
 
-X = OneHotEncoder(sparse_output=False).fit_transform(X)
+X_transformed = OneHotEncoder(sparse_output=False).fit_transform(X)
 
-with tqdm(total=cv.get_n_splits(X, y), desc="Cross-Validation") as pbar:
-    for fold_idx, (train_idx, val_idx) in enumerate(cv.split(X, y)):
+with tqdm(total=cv.get_n_splits(X_transformed, y), desc="Cross-Validation") as pbar:
+    for fold_idx, (train_idx, val_idx) in enumerate(cv.split(X_transformed, y)):
         # Initial train/val split
-        X_train, y_train = X[train_idx], y[train_idx]
-        X_val, y_val = X[val_idx], y[val_idx]
+        X_train, y_train = X_transformed[train_idx], y[train_idx]
+        X_val, y_val = X_transformed[val_idx], y[val_idx]
+
+        print(X_train[0])
+        print(y_train[0])
+        print(X_val[0])
+        print(y_val[0])
 
         # First round fit/predict
         clf.fit(X_train, y_train)
@@ -102,7 +124,7 @@ with tqdm(total=cv.get_n_splits(X, y), desc="Cross-Validation") as pbar:
         val_aug_indices = val_idx[worst_indices_in_val]  # global indices
 
         # Augment training set
-        X_aug = X[val_aug_indices]
+        X_aug = X_transformed[val_aug_indices]
         y_aug = y[val_aug_indices]
         X_train_aug = np.concatenate([X_train, X_aug], axis=0)
         y_train_aug = np.concatenate([y_train, y_aug], axis=0)
@@ -111,7 +133,7 @@ with tqdm(total=cv.get_n_splits(X, y), desc="Cross-Validation") as pbar:
         # Remove augmented samples from validation
         real_val_mask = ~np.isin(val_idx, val_aug_indices)
         val_idx_real = val_idx[real_val_mask]
-        X_val_real = X[val_idx_real]
+        X_val_real = X_transformed[val_idx_real]
         y_val_real = y[val_idx_real]
 
         if len(val_idx_real) == 0:
@@ -122,6 +144,18 @@ with tqdm(total=cv.get_n_splits(X, y), desc="Cross-Validation") as pbar:
         # Retrain and re-evaluate
         clf.fit(X_train_aug, y_train_aug)
         y_val_pred = clf.predict(X_val_real)
+
+        print(y_val_pred)
+        print(y_val_pred.shape)        
+
+        game = pyspiel.load_game("leduc_poker")
+        tabular_policy = policy.TabularPolicy(game)
+        for state in tabular_policy.states:
+            infoset_key = state_to_key(state, "leduc_poker")
+            print(np.where(X == infoset_key))
+            tabular_policy.action_probability_array[tabular_policy.state_lookup[tabular_policy._state_key(state, state.current_player())]] = y_val_pred[np.where(X == infoset_key)]
+
+        nash_conv = exploitability.nash_conv(game, tabular_policy)
 
         if y.ndim == 1:
             final_errors = np.abs(y_val_real - y_val_pred)
@@ -141,7 +175,7 @@ with tqdm(total=cv.get_n_splits(X, y), desc="Cross-Validation") as pbar:
             best_pred = local_pred
             np.savetxt(save_path, train_aug_indices.reshape(-1, 1), fmt="%d", delimiter=",")
 
-        real_test_pct = 100 * len(val_idx_real) / len(X)
+        real_test_pct = 100 * len(val_idx_real) / len(X_transformed)
 
         # Update progress bar
         pbar.set_postfix({
@@ -152,3 +186,4 @@ with tqdm(total=cv.get_n_splits(X, y), desc="Cross-Validation") as pbar:
             "RealTest%": f"{real_test_pct:.1f}%"
         })
         pbar.update(1)
+        break

@@ -54,7 +54,6 @@ def create_sane(policy: policy.TabularPolicy, game_name):
         else:
             conversion[new_key] = [key]
         sane_policy[tuple(convert_categorical_to_sane(key, game_name))] = cat_policy[key]
-    print(conversion)
     return sane_policy
 
 def convert_categorical_to_sane(raw_state, game_name):
