@@ -346,11 +346,11 @@ class DeepCFRSolver(policy.Policy):
     Returns:
       (float) The average loss obtained on this batch of transitions or `None`.
     """
-    if self._batch_size_advantage:
-      if self._batch_size_advantage > len(self._strategy_memories):
+    if self._batch_size_strategy:
+      if self._batch_size_strategy > len(self._strategy_memories):
         samples = self._strategy_memories
       else:
-        samples = self._strategy_memories.sample(self._batch_size_advantage)
+        samples = self._strategy_memories.sample(self._batch_size_strategy)
     else:
       samples = self._strategy_memories
     num_samples_per_infoset = {}
