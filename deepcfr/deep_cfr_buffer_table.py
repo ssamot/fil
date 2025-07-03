@@ -303,7 +303,11 @@ class DeepCFRSolver(policy.Policy):
     cur_player = state.current_player()
     legal_actions = state.legal_actions(cur_player)
     info_state_string = state.information_state_string(state.current_player())
-    probs = self._policy[info_state_string]
+    if info_state_string in self._policy:
+      probs = self._policy[info_state_string]
+    else:
+      probs = np.zeros(self._num_actions)
+      probs[legal_actions] = 1./len(legal_actions)
     return {action: probs[action] for action in legal_actions}
 
   def _learn_advantage_network(self, player):
@@ -320,10 +324,9 @@ class DeepCFRSolver(policy.Policy):
     """
     if self._batch_size_advantage:
       if self._batch_size_advantage > len(self._advantage_memories[player]):
-        ## Skip if there aren't enough samples
-        return None
-      samples = self._advantage_memories[player].sample(
-          self._batch_size_advantage)
+        samples = self._advantage_memories[player]
+      else:
+        samples = self._advantage_memories[player].sample(self._batch_size_advantage)
     else:
       samples = self._advantage_memories[player]
     num_samples_per_infoset = {}
