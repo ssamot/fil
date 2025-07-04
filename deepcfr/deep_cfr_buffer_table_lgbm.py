@@ -32,6 +32,8 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from tqdm import tqdm
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.metrics import r2_score
 
 from open_spiel.python import policy
 import pyspiel
@@ -122,7 +124,7 @@ class Tabular:
 
 def create_regressor(action_size):
   # return Tabular(action_size)
-  return MultiOutputRegressor(lgb.LGBMRegressor(verbose=-1))
+  return DecisionTreeRegressor()
 
 
 class DeepCFRSolver(policy.Policy):
@@ -198,14 +200,8 @@ class DeepCFRSolver(policy.Policy):
         ReservoirBuffer(memory_capacity) for _ in range(self._num_players)
     ]
     self._advantage_regressors = [
-        create_regressor(self._num_actions) for _ in range(self._num_players)
+        None for _ in range(self._num_players)
     ]
-
-    X_dummy = np.zeros((2, self._embedding_size))
-    y_dummy = np.zeros((2, self._num_actions))
-
-    for advantage_regressor in self._advantage_regressors:      
-      advantage_regressor.fit(X_dummy, y_dummy)
 
   @property
   def advantage_buffers(self):
@@ -310,7 +306,10 @@ class DeepCFRSolver(policy.Policy):
     """
     info_state = state.information_state_tensor(player)
     legal_actions = state.legal_actions(player)
-    raw_advantages = self._advantage_regressors[player].predict([info_state])[0]
+    if self._advantage_regressors[player]:
+      raw_advantages = self._advantage_regressors[player].predict([info_state])[0]
+    else:
+      raw_advantages = np.ones(self._num_actions)
     advantages = [max(0., advantage) for advantage in raw_advantages]
     cumulative_regret = np.sum([advantages[action] for action in legal_actions])
     matched_regrets = np.array([0.] * self._num_actions)
