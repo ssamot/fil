@@ -84,7 +84,7 @@ def main(unused_argv):
       logging.info("Iteration: {} NashConv: {}".format(i, conv))
       results[i] = conv
   
-  results_file = config.results_file_base + "pytorch_left_out.json"
+  results_file = config.results_file_base + "pytorch_rolling.json"
   with open(results_file, 'w') as results_file:
     json.dump(results, results_file)
   end = time.time()
