@@ -29,6 +29,7 @@ import random
 import numpy as np
 from scipy import stats
 import sklearn.linear_model
+import sklearn.pipeline
 import sklearn.preprocessing
 import torch
 from torch import nn
@@ -39,21 +40,8 @@ import sklearn
 from open_spiel.python import policy
 import pyspiel
 
-class PolynomialRegressor():
-  def __init__(self):
-    self._linear_regressor = sklearn.linear_model.LinearRegression()
-    self._poly_features = sklearn.preprocessing.PolynomialFeatures(degree=4)
-
-  def fit(self, X, y):
-    X = self._poly_features.fit_transform(X)
-    return self._linear_regressor.fit(X, y)
-
-  def predict(self, X):
-    X = self._poly_features.fit_transform(X)
-    return self._linear_regressor.predict(X)
-
 def create_regressor():
-  return PolynomialRegressor()
+  return sklearn.pipeline.Pipeline([('polynomial_features', sklearn.preprocessing.PolynomialFeatures(degree=4)), ('linear_regressor', sklearn.linear_model.LinearRegression())])
 
 AdvantageMemory = collections.namedtuple(
     "AdvantageMemory", "public_state_key hand_strenght iteration advantage action")
