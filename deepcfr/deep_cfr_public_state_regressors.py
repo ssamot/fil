@@ -438,6 +438,6 @@ if __name__ == "__main__":
   for hand in hands:
     hs = solver.get_hand_strenght(hand[0], hand[1])
     hsr = solver.get_hand_strenght(hand[1], hand[0])
-    if hs != hsr:
-      raise Exception("Hand strenght is independent of the order of the cards")
-    print(hs)
+    if hs[1] != hsr[1]:
+      raise Exception("Full hand strenght should be independent of the order of the cards")
+    print(hand, hs, hsr)
