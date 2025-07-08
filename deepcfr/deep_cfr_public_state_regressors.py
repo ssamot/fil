@@ -218,15 +218,16 @@ class DeepCFRSolver(policy.Policy):
 
   def get_hand_strenght(self, private_card, public_card):
     if public_card is None:
-      return (private_card // 2) / 10
+      return [(private_card // 2) / 2, 0]
     else:
       if (private_card == public_card + 1 and private_card % 2 == 1) or (private_card == public_card - 1 and private_card % 2 == 0):
-        return (9 + private_card // 2) / 10
+        full_hs = (9 + private_card // 2) / 10
       else:
         if public_card > private_card:
-          return (3 * (public_card // 2) + private_card // 2) / 10
+          full_hs = (3 * (public_card // 2) + private_card // 2) / 10
         else:
-          return (3 * (private_card // 2) + public_card // 2) / 10
+          full_hs = (3 * (private_card // 2) + public_card // 2) / 10
+      return [(private_card // 2) / 2, full_hs]
 
   def solve(self):
     """Solution logic for Deep CFR.
@@ -320,7 +321,7 @@ class DeepCFRSolver(policy.Policy):
     public_state_key = self.get_table_key(state)
     hand_strenght = self.get_state_hand_strenght(state)
     if public_state_key in self._advantage_regressors[player]:
-      raw_advantages = self._advantage_regressors[player][public_state_key].predict([[hand_strenght]])[0]
+      raw_advantages = self._advantage_regressors[player][public_state_key].predict([hand_strenght])[0]
     else:
       raw_advantages = np.ones(self._num_actions)
     advantages = [max(0., advantage) for advantage in raw_advantages]
@@ -349,7 +350,7 @@ class DeepCFRSolver(policy.Policy):
     public_state_key = self.get_table_key(state)
     hand_strenght = self.get_state_hand_strenght(state)
     if public_state_key in self._policy_regressors:
-      probs = self._policy_regressors[public_state_key].predict([[hand_strenght]])[0]
+      probs = self._policy_regressors[public_state_key].predict([hand_strenght])[0]
     else:
       probs = np.zeros(self._num_actions)
       probs[legal_actions] = 1./len(legal_actions)
@@ -378,10 +379,10 @@ class DeepCFRSolver(policy.Policy):
     training_data = {}
     for s in samples:
       if s.public_state_key in training_data:
-        training_data[s.public_state_key][0].append([s.hand_strenght])
+        training_data[s.public_state_key][0].append(s.hand_strenght)
         training_data[s.public_state_key][1].append(s.advantage)
       else:
-        training_data[s.public_state_key] = [[[s.hand_strenght]], [s.advantage]]
+        training_data[s.public_state_key] = [[s.hand_strenght], [s.advantage]]
 
     for public_state_key in training_data:
       self._advantage_regressors[player][public_state_key] = create_regressor()
@@ -404,10 +405,10 @@ class DeepCFRSolver(policy.Policy):
     training_data = {}
     for s in samples:
       if s.public_state_key in training_data:
-        training_data[s.public_state_key][0].append([s.hand_strenght])
+        training_data[s.public_state_key][0].append(s.hand_strenght)
         training_data[s.public_state_key][1].append(s.strategy_action_probs)
       else:
-        training_data[s.public_state_key] = [[[s.hand_strenght]], [s.strategy_action_probs]]
+        training_data[s.public_state_key] = [[s.hand_strenght], [s.strategy_action_probs]]
 
     for public_state_key in training_data:
       self._policy_regressors[public_state_key] = create_regressor()
