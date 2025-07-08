@@ -218,12 +218,15 @@ class DeepCFRSolver(policy.Policy):
 
   def get_hand_strenght(self, private_card, public_card):
     if public_card is None:
-      return (private_card // 2) / 5
+      return (private_card // 2) / 10
     else:
       if (private_card == public_card + 1 and private_card % 2 == 1) or (private_card == public_card - 1 and private_card % 2 == 0):
-        return (3 + private_card // 2) / 5
+        return (9 + private_card // 2) / 10
       else:
-        return (private_card // 2) / 5
+        if public_card > private_card:
+          return (3 * (public_card // 2) + private_card // 2) / 10
+        else:
+          return (3 * (private_card // 2) + public_card // 2) / 10
 
   def solve(self):
     """Solution logic for Deep CFR.
@@ -409,3 +412,31 @@ class DeepCFRSolver(policy.Policy):
     for public_state_key in training_data:
       self._policy_regressors[public_state_key] = create_regressor()
       self._policy_regressors[public_state_key].fit(training_data[public_state_key][0], training_data[public_state_key][1])
+
+if __name__ == "__main__":
+  hands = [
+    [0 ,1],
+    [0, 2],
+    [0, 3],
+    [0, 4],
+    [0, 5],
+    [1, 2],
+    [1, 3],
+    [1, 4],
+    [1, 5],
+    [2, 3],
+    [2, 4],
+    [2, 5],
+    [3, 4],
+    [3, 5],
+    [4, 5]
+  ]
+
+  solver = DeepCFRSolver(pyspiel.load_game("kuhn_poker"))
+
+  for hand in hands:
+    hs = solver.get_hand_strenght(hand[0], hand[1])
+    hsr = solver.get_hand_strenght(hand[1], hand[0])
+    if hs != hsr:
+      raise Exception("Hand strenght is independent of the order of the cards")
+    print(hs)
