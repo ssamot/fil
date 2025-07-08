@@ -31,6 +31,7 @@ from scipy import stats
 import sklearn.linear_model
 import sklearn.pipeline
 import sklearn.preprocessing
+import sklearn.tree
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -41,6 +42,7 @@ from open_spiel.python import policy
 import pyspiel
 
 def create_regressor():
+  return sklearn.tree.DecisionTreeRegressor()
   return sklearn.pipeline.Pipeline([('polynomial_features', sklearn.preprocessing.PolynomialFeatures(degree=4)), ('linear_regressor', sklearn.linear_model.LinearRegression())])
 
 AdvantageMemory = collections.namedtuple(
