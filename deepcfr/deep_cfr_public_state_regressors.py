@@ -41,9 +41,13 @@ import sklearn
 from open_spiel.python import policy
 import pyspiel
 
-def create_regressor():
-  return sklearn.tree.DecisionTreeRegressor()
-  return sklearn.pipeline.Pipeline([('polynomial_features', sklearn.preprocessing.PolynomialFeatures(degree=4)), ('linear_regressor', sklearn.linear_model.LinearRegression())])
+def create_regressor(regressor_type):
+  if regressor_type == "decision_tree":
+    return sklearn.tree.DecisionTreeRegressor()
+  elif regressor_type == "splines":
+    return sklearn.pipeline.Pipeline([('polynomial_features', sklearn.preprocessing.PolynomialFeatures(degree=4)), ('linear_regressor', sklearn.linear_model.LinearRegression())])
+  else:
+    raise ValueError(f"Invalid regressor type - {regressor_type}. Options are decision_tree and splines.")
 
 AdvantageMemory = collections.namedtuple(
     "AdvantageMemory", "public_state_key hand_strenght iteration advantage action")
@@ -129,7 +133,8 @@ class DeepCFRSolver(policy.Policy):
                policy_network_train_steps: int = 1,
                advantage_network_train_steps: int = 1,
                reinitialize_advantage_networks: bool = True,
-               public_state_indexes = []):
+               public_state_indexes = [],
+               regressor = "decision_tree"):
     """Initialize the Deep CFR algorithm.
 
     Args:
@@ -172,6 +177,7 @@ class DeepCFRSolver(policy.Policy):
     self._public_state_indexes = public_state_indexes
     self._public_state_map = {}
     self._hand_strenght_map = {}
+    self._regressor_type = regressor
 
     # Define strategy network, loss & memory.
     self._strategy_memories = ReservoirBuffer(memory_capacity)
@@ -385,7 +391,7 @@ class DeepCFRSolver(policy.Policy):
         training_data[s.public_state_key] = [[s.hand_strenght], [s.advantage]]
 
     for public_state_key in training_data:
-      self._advantage_regressors[player][public_state_key] = create_regressor()
+      self._advantage_regressors[player][public_state_key] = create_regressor(self._regressor_type)
       self._advantage_regressors[player][public_state_key].fit(training_data[public_state_key][0], training_data[public_state_key][1])
 
   def _learn_strategy_regressors(self):
@@ -411,7 +417,7 @@ class DeepCFRSolver(policy.Policy):
         training_data[s.public_state_key] = [[s.hand_strenght], [s.strategy_action_probs]]
 
     for public_state_key in training_data:
-      self._policy_regressors[public_state_key] = create_regressor()
+      self._policy_regressors[public_state_key] = create_regressor(self._regressor_type)
       self._policy_regressors[public_state_key].fit(training_data[public_state_key][0], training_data[public_state_key][1])
 
 if __name__ == "__main__":
