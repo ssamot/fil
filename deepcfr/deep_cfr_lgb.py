@@ -51,16 +51,16 @@ StrategyMemory = collections.namedtuple(
 
 def create_regressor():
   return MultiOutputRegressor(lgb.LGBMRegressor(
-    n_estimators=1000,         # Number of boosting rounds
-    learning_rate=0.05,        # Small to avoid overshooting
-    num_leaves=128,            # Controls tree complexity
-    max_depth=10,              # Maximum tree depth
-    min_child_samples=30,      # Minimum samples per leaf
-    subsample=0.9,             # Row sampling
+    n_estimators=200,          
+    learning_rate=0.1,         
+    num_leaves=64,             
+    max_depth=7,               
+    min_child_samples=20,      
+    subsample=0.8,             
     subsample_freq=1,
-    colsample_bytree=0.9,      # Feature sampling
-    reg_alpha=0.1,             # L1 regularization
-    reg_lambda=0.1,            # L2 regularization
+    colsample_bytree=0.8,      
+    reg_alpha=0.1,             
+    reg_lambda=0.1,            
     verbose=-1))
 
 class ReservoirBuffer(object):
