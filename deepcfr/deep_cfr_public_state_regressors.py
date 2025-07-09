@@ -45,7 +45,11 @@ def create_regressor(regressor_type):
   if regressor_type == "decision_tree":
     return sklearn.tree.DecisionTreeRegressor()
   elif regressor_type == "splines":
-    return sklearn.pipeline.Pipeline([('polynomial_features', sklearn.preprocessing.PolynomialFeatures(degree=4)), ('linear_regressor', sklearn.linear_model.LinearRegression())])
+    return sklearn.pipeline.Pipeline([
+      ('polynomial_features', sklearn.preprocessing.PolynomialFeatures()), 
+      ("splines", sklearn.preprocessing.SplineTransformer()), 
+      ('linear_regressor', sklearn.linear_model.Ridge())
+    ])
   else:
     raise ValueError(f"Invalid regressor type - {regressor_type}. Options are decision_tree and splines.")
 
