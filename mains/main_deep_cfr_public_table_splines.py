@@ -55,7 +55,8 @@ def main(unused_argv):
     batch_size_strategy=config.batch_size_strategy * config.policy_network_train_steps,
     memory_capacity=config.memory_capacity,
     public_state_indexes=config.public_state_indexes,
-    regressor="splines")
+    regressor="splines",
+    ignore_cards=config.ignore_cards)
 
   results = {}
   for i in range(deep_cfr_solver._num_iterations):

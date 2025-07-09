@@ -59,7 +59,8 @@ def main(unused_argv):
     memory_capacity=config.memory_capacity,
     policy_network_train_steps=config.policy_network_train_steps,
     advantage_network_train_steps=config.advantage_network_train_steps,
-    reinitialize_advantage_networks=config.reinitialize_advantage_networks)
+    reinitialize_advantage_networks=config.reinitialize_advantage_networks,
+    ignore_cards=config.ignore_cards)
 
   results = {}
   advantage_losses = collections.defaultdict(list)

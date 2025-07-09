@@ -219,7 +219,8 @@ class DeepCFRSolver(policy.Policy):
                memory_capacity: int = int(1e6),
                policy_network_train_steps: int = 1,
                advantage_network_train_steps: int = 1,
-               reinitialize_advantage_networks: bool = True):
+               reinitialize_advantage_networks: bool = True,
+               ignore_cards = None):
     """Initialize the Deep CFR algorithm.
 
     Args:
@@ -259,6 +260,7 @@ class DeepCFRSolver(policy.Policy):
     self._reinitialize_advantage_networks = reinitialize_advantage_networks
     self._num_actions = game.num_distinct_actions()
     self._iteration = 1
+    self._ignore_cards = ignore_cards
 
     # Define strategy network, loss & memory.
     self._strategy_memories = ReservoirBuffer(memory_capacity)
@@ -379,9 +381,13 @@ class DeepCFRSolver(policy.Policy):
       sampled_regret_arr = [0] * self._num_actions
       for action in sampled_regret:
         sampled_regret_arr[action] = sampled_regret[action]
-      self._advantage_memories[player].add(
-          AdvantageMemory(state.information_state_tensor(), self._iteration,
-                          sampled_regret_arr, action))
+      information_state_tensor = state.information_state_tensor()
+      if self._ignore_cards is not None and (
+        (information_state_tensor[self._ignore_cards[0]+2] and information_state_tensor[self._ignore_cards[1]+8]) or
+        (information_state_tensor[self._ignore_cards[1]+2] and information_state_tensor[self._ignore_cards[0]+8])):
+        pass
+      else:
+        self._advantage_memories[player].add(AdvantageMemory(information_state_tensor, self._iteration, sampled_regret_arr, action))
       return cfv
     else:
       other_player = state.current_player()
@@ -390,10 +396,13 @@ class DeepCFRSolver(policy.Policy):
       probs = np.array(strategy)
       probs /= probs.sum()
       sampled_action = np.random.choice(range(self._num_actions), p=probs)
-      self._strategy_memories.add(
-          StrategyMemory(
-              state.information_state_tensor(other_player), self._iteration,
-              strategy))
+      information_state_tensor = state.information_state_tensor()
+      if self._ignore_cards is not None and (
+        (information_state_tensor[self._ignore_cards[0]+2] and information_state_tensor[self._ignore_cards[1]+8]) or
+        (information_state_tensor[self._ignore_cards[1]+2] and information_state_tensor[self._ignore_cards[0]+8])):
+        pass
+      else:
+        self._strategy_memories.add(StrategyMemory(information_state_tensor, self._iteration, strategy))
       return self._traverse_game_tree(state.child(sampled_action), player)
 
   def _sample_action_from_advantage(self, state, player):
