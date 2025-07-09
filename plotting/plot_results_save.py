@@ -2,7 +2,7 @@ import json
 import matplotlib.pyplot as plt
 import sys
 
-def load_and_plot(files):
+def load_and_plot(files, use_log_scale=False):
     plt.figure(figsize=(16,9))
     
     for file in files:
@@ -16,15 +16,24 @@ def load_and_plot(files):
     plt.xlabel("Iteration")
     plt.ylabel("Exploitability")
     plt.title("Exploitability over Iterations")
+    if use_log_scale:
+        plt.yscale("log")
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
     plt.savefig("results/fig.png", dpi=300)
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python plot_jsons.py file1.json file2.json ...")
+    args = sys.argv[1:]
+    use_log = False
+
+    if "--log" in args:
+        use_log = True
+        args.remove("--log")
+
+    if not args:
+        print("Usage: python plot_jsons.py [--log] file1.json file2.json ...")
         sys.exit(1)
 
-    json_files = sys.argv[1:]
-    load_and_plot(json_files)
+    json_files = args
+    load_and_plot(json_files, use_log)
