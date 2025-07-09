@@ -302,7 +302,7 @@ class DeepCFRSolver(policy.Policy):
       sampled_regret_arr = [0] * self._num_actions
       for action in sampled_regret:
         sampled_regret_arr[action] = sampled_regret[action]
-      information_state_tensor = self.get_state_hand_strenght(state)
+      information_state_tensor = state.information_state_tensor()
       if self._ignore_cards is not None and (
         (information_state_tensor[self._ignore_cards[0]+2] and information_state_tensor[self._ignore_cards[1]+8]) or
         (information_state_tensor[self._ignore_cards[1]+2] and information_state_tensor[self._ignore_cards[0]+8])):
@@ -319,7 +319,7 @@ class DeepCFRSolver(policy.Policy):
       probs = np.array(strategy)
       probs /= probs.sum()
       sampled_action = np.random.choice(range(self._num_actions), p=probs)
-      information_state_tensor = self.get_state_hand_strenght(state)
+      information_state_tensor = state.information_state_tensor()
       if self._ignore_cards is not None and (
         (information_state_tensor[self._ignore_cards[0]+2] and information_state_tensor[self._ignore_cards[1]+8]) or
         (information_state_tensor[self._ignore_cards[1]+2] and information_state_tensor[self._ignore_cards[0]+8])):
