@@ -35,6 +35,7 @@ from deepcfr import deep_cfr_public_state_regressors as deep_cfr
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('config', None, 'Path to the config file')
+flags.DEFINE_integer('index', None, 'Idex to use with the results file.')
 flags.mark_flag_as_required('config')
 
 
@@ -77,7 +78,10 @@ def main(unused_argv):
       logging.info("Iteration: {} NashConv: {}".format(i, conv))
       results[i] = conv
   
-  results_file = config.results_file_base + "public_table_decision_tree.json"
+  if FLAGS.index is not None:
+    results_file = config.results_file_base + f"pt_dt_{FLAGS.index}.json"
+  else:
+    results_file = config.results_file_base + "pt_dt.json"
   with open(results_file, 'w') as results_file:
     json.dump(results, results_file)
   end = time.time()
