@@ -13,3 +13,4 @@ policy_network_train_steps=500
 advantage_network_train_steps=100
 reinitialize_advantage_networks=False
 cat_dims=[2,3,2,2,2]
+ignore_cards = None
