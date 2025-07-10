@@ -83,7 +83,7 @@ def main(unused_argv):
       results[i] = conv
   
   if FLAGS.index is not None:
-    results_file = config.results_file_base + f"lgb{FLAGS.index}.json"
+    results_file = config.results_file_base + f"lgb_{FLAGS.index}.json"
   else:
     results_file = config.results_file_base + "lgb.json"
   with open(results_file, 'w') as results_file:
