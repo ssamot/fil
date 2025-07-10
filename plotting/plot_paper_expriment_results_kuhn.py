@@ -59,6 +59,8 @@ def load_and_plot(use_log_scale):
     plt.plot(lgbm_data["x"][0], lgbm_mean, label="DeepCFRLGBM", color='r')
     plt.fill_between(lgbm_data["x"][0], (lgbm_mean - lgbm_ci), (lgbm_mean + lgbm_ci), color='r', alpha=.1)
 
+    plt.plot([lgbm_data["x"][0][0], lgbm_data["x"][0][-1]], [0.9166666666666666]*2, label="Random", color="black")
+
     plt.xlabel("Iteration")
     plt.ylabel("Exploitability")
     plt.legend()

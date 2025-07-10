@@ -5,10 +5,8 @@ import glob
 import numpy as np
 from scipy import stats
 
-pytorch_files = "results/leduc_pytorch*"
-lgbm_files = "results/leduc_lgb*"
-pt_splines_files = "results/leduc_pt_splines*"
-pt_dt_files = "results/leduc_pt_dt*"
+pytorch_files = "results/goofspiel_4_pytorch*"
+lgbm_files = "results/goofspiel_4_lgb*"
 
 def load_data(file_start):
     data = {"x": [], "y": []}
@@ -34,14 +32,10 @@ def check_data(data):
 def load_and_plot(use_log_scale):
     pytorch_data = load_data(pytorch_files)
     lgbm_data = load_data(lgbm_files)
-    pt_splines_data = load_data(pt_splines_files)
-    pt_dt_data = load_data(pt_dt_files)
 
     data = [
         {"name": "DeepCFR", "data": pytorch_data, "color" : "blue"},
         {"name": "LGBM", "data": lgbm_data, "color" : "orange"},
-        {"name": "Public table splines", "data": pt_splines_data, "color" : "green"},
-        {"name": "Public table decision tree", "data": pt_dt_data, "color" : "red"}
     ]
 
     for d in data:
@@ -64,7 +58,7 @@ def load_and_plot(use_log_scale):
         plt.plot(d["data"]["x"][0], d["mean"], label=d["name"], color=d["color"])
         plt.fill_between(d["data"]["x"][0], (d["mean"] - d["ci"]), (d["mean"] + d["ci"]), color=d["color"], alpha=.1)
 
-    plt.plot([lgbm_data["x"][0][0], lgbm_data["x"][0][-1]], [4.747222222222222]*2, label="Random", color="black")
+    plt.plot([lgbm_data["x"][0][0], lgbm_data["x"][0][-1]], [1.4166666666666665]*2, label="Random", color="black")
 
     plt.xlabel("Iteration")
     plt.ylabel("Exploitability")
@@ -73,9 +67,9 @@ def load_and_plot(use_log_scale):
     plt.grid(True)
     plt.tight_layout()
     if use_log_scale:
-        plt.savefig("results/fig_leduc_log.pdf", dpi=300)
+        plt.savefig("results/fig_goofspiel_4_log.pdf", dpi=300)
     else:
-        plt.savefig("results/fig_leduc.pdf", dpi=300)
+        plt.savefig("results/fig_goofspiel_4.pdf", dpi=300)
 
 if __name__ == "__main__":
     args = sys.argv[1:]
