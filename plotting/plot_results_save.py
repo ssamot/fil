@@ -2,7 +2,7 @@ import json
 import matplotlib.pyplot as plt
 import sys
 
-def load_and_plot(files, use_log_scale=False):
+def load_and_plot(files, file_name, use_log_scale=False):
     plt.figure(figsize=(16,9))
     
     for file in files:
@@ -21,7 +21,10 @@ def load_and_plot(files, use_log_scale=False):
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig("results/fig.png", dpi=300)
+    if use_log_scale:
+        plt.savefig(f"results/{file_name}_log.png", dpi=300)
+    else:
+        plt.savefig(f"results/{file_name}.png", dpi=300)
 
 if __name__ == "__main__":
     args = sys.argv[1:]
@@ -32,8 +35,9 @@ if __name__ == "__main__":
         args.remove("--log")
 
     if not args:
-        print("Usage: python plot_jsons.py [--log] file1.json file2.json ...")
+        print("Usage: python plot_jsons.py [--log] save_file_name file1.json file2.json ...")
         sys.exit(1)
 
-    json_files = args
-    load_and_plot(json_files, use_log)
+    json_files = args[1:]
+    file_name = args[0]
+    load_and_plot(json_files, file_name, use_log)
