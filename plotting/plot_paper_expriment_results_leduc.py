@@ -5,8 +5,8 @@ import glob
 import numpy as np
 from scipy import stats
 
-pytorch_files = "results/leduc_pytorch_test*"
-lgbm_files = "results/leduc_lgb_test*"
+pytorch_files = "results/leduc_pytorch*"
+lgbm_files = "results/leduc_lgb*"
 
 def load_data(file_start):
     data = {"x": [], "y": []}
@@ -29,7 +29,7 @@ def check_data(data):
                 raise Exception("Different files have different iterations")
         
 
-def load_and_plot():
+def load_and_plot(use_log_scale):
     pytorch_data = load_data(pytorch_files)
     lgbm_data = load_data(lgbm_files)
 
@@ -49,6 +49,9 @@ def load_and_plot():
     lgbm_ci = sem * stats.t.ppf((1 + confidence) / 2., df=n-1)
 
     plt.figure(figsize=(16,9))
+
+    if use_log_scale:
+        plt.yscale("log")
     
     plt.plot(pytorch_data["x"][0], pytorch_mean, label="DeepCFRPytorch", color='b')
     plt.fill_between(pytorch_data["x"][0], (pytorch_mean - pytorch_ci), (pytorch_mean + pytorch_ci), color='b', alpha=.1)
@@ -62,7 +65,17 @@ def load_and_plot():
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig("results/fig.png", dpi=300)
+    if use_log_scale:
+        plt.savefig("results/fig_leduc_log.pdf", dpi=300)
+    else:
+        plt.savefig("results/fig_leduc.pdf", dpi=300)
 
 if __name__ == "__main__":
-    load_and_plot()
+    args = sys.argv[1:]
+    use_log = False
+
+    if "--log" in args:
+        use_log = True
+        args.remove("--log")
+
+    load_and_plot(use_log)
