@@ -1,4 +1,4 @@
-game_name = "liars_dice"
+game_name = "liars_dice(dice_sides=4)"
 num_iterations = 1000
 num_traversals = 1500
 log_frequency = 1

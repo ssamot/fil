@@ -58,7 +58,7 @@ def load_and_plot(use_log_scale):
         plt.plot(d["data"]["x"][0], d["mean"], label=d["name"], color=d["color"])
         plt.fill_between(d["data"]["x"][0], (d["mean"] - d["ci"]), (d["mean"] + d["ci"]), color=d["color"], alpha=.1)
 
-    plt.plot([lgbm_data["x"][0][0], lgbm_data["x"][0][-1]], [1.5614886463844795]*2, label="Random", color="black")
+    plt.plot([lgbm_data["x"][0][0], lgbm_data["x"][0][-1]], [1.3101190476190476]*2, label="Random", color="black")
 
     plt.xlabel("Iteration")
     plt.ylabel("Exploitability")
