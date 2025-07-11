@@ -45,15 +45,15 @@ def load_and_plot(data, random_exploitability, file_identifier, use_log_scale):
         plt.yscale("log")
 
     for d in data:
-        plt.plot(d["data"]["x"][0], d["mean"], label=d["name"], color=d["color"])
+        plt.plot(d["data"]["x"][0], d["mean"], label=d["name"], color=d["color"], linewidth=conf.LINEWIDTH)
         plt.fill_between(d["data"]["x"][0], (d["mean"] - d["ci"]), (d["mean"] + d["ci"]), color=d["color"], alpha=conf.ALPHA)
 
-    plt.plot([d["data"]["x"][0][0], d["data"]["x"][0][-1]], [random_exploitability]*2, label="Random", color="black")
+    plt.plot([d["data"]["x"][0][0], d["data"]["x"][0][-1]], [random_exploitability]*2, label="Random", color="black", linewidth=conf.LINEWIDTH)
 
     plt.xlabel("Iteration")
     plt.ylabel("Exploitability")
     plt.title("Exploitability over Iterations")
-    plt.legend()
+    plt.legend(loc="upper right")
     plt.grid(True)
     plt.tight_layout()
     if use_log_scale:
