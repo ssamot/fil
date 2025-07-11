@@ -1,6 +1,7 @@
 import sys
 from plot_paper_expriment_general import load_data, load_and_plot
 from plot_paper_experiment_config import COLOR_PYTORCH, COLOR_LGBM
+from plot_paper_experiment_config import TEXT_PYTORCH, TEXT_LGBM
 
 pytorch_files = "results/liars_dice_pytorch*"
 lgbm_files = "results/liars_dice_lgb*"
@@ -10,8 +11,8 @@ def load(use_log_scale):
     lgbm_data = load_data(lgbm_files)
 
     data = [
-        {"name": "DeepCFR", "data": pytorch_data, "color" : COLOR_PYTORCH},
-        {"name": "LGBM", "data": lgbm_data, "color" : COLOR_LGBM},
+        {"name": TEXT_PYTORCH, "data": pytorch_data, "color" : COLOR_PYTORCH},
+        {"name": TEXT_LGBM, "data": lgbm_data, "color" : COLOR_LGBM},
     ]
 
     load_and_plot(data, 1.3101190476190476, "goofspiel_4", use_log_scale)

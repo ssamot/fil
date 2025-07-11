@@ -8,3 +8,8 @@ COLOR_PYTORCH="blue"
 COLOR_LGBM="orange"
 COLOR_SPLINES="green"
 COLOR_DT="red"
+
+TEXT_PYTORCH="DeepCFR"
+TEXT_LGBM="LGBM"
+TEXT_SPLINES="Public table splines"
+TEXT_DT="Public table dt"
