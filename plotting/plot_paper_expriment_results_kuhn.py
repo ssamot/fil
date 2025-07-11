@@ -1,5 +1,6 @@
 import sys
 from plot_paper_expriment_general import load_data, load_and_plot
+from plot_paper_experiment_config import COLOR_PYTORCH, COLOR_LGBM
 
 pytorch_files = "results/kuhn_pytorch*"
 lgbm_files = "results/kuhn_lgb*"
@@ -9,8 +10,8 @@ def load(use_log_scale):
     lgbm_data = load_data(lgbm_files)
 
     data = [
-        {"name": "DeepCFR", "data": pytorch_data, "color" : "blue"},
-        {"name": "LGBM", "data": lgbm_data, "color" : "orange"},
+        {"name": "DeepCFR", "data": pytorch_data, "color" : COLOR_PYTORCH},
+        {"name": "LGBM", "data": lgbm_data, "color" : COLOR_LGBM},
     ]
 
     load_and_plot(data, 0.9166666666666666, "kuhn", use_log_scale)

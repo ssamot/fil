@@ -1,5 +1,6 @@
 import sys
 from plot_paper_expriment_general import load_data, load_and_plot
+from plot_paper_experiment_config import COLOR_PYTORCH, COLOR_SPLINES, COLOR_DT
 
 pytorch_files = "results/leduc_ignore_jack_queen_pytorch*"
 pt_splines_files = "results/leduc_ignore_jack_queen_pt_splines*"
@@ -11,9 +12,9 @@ def load(use_log_scale):
     pt_dt_data = load_data(pt_dt_files)
 
     data = [
-        {"name": "DeepCFR", "data": pytorch_data, "color" : "blue"},
-        {"name": "Public table splines", "data": pt_splines_data, "color" : "green"},
-        {"name": "Public table decision tree", "data": pt_dt_data, "color" : "red"}
+        {"name": "DeepCFR", "data": pytorch_data, "color" : COLOR_PYTORCH},
+        {"name": "Public table splines", "data": pt_splines_data, "color" : COLOR_SPLINES},
+        {"name": "Public table decision tree", "data": pt_dt_data, "color" : COLOR_DT}
     ]
 
     load_and_plot(data, 4.747222222222222, "leduc_ignore_queens", use_log_scale)
