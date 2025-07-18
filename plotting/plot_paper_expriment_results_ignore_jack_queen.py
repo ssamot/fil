@@ -18,7 +18,7 @@ def load(use_log_scale):
         {"name": TEXT_DT, "data": pt_dt_data, "color" : COLOR_DT}
     ]
 
-    load_and_plot(data, 4.747222222222222, "leduc_ignore_queens", use_log_scale)
+    load_and_plot(data, 4.747222222222222, "leduc_ignore_jack_queen", use_log_scale)
 
 if __name__ == "__main__":
     args = sys.argv[1:]

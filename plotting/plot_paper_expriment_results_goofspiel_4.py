@@ -15,7 +15,7 @@ def load(use_log_scale):
         {"name": TEXT_LGBM, "data": lgbm_data, "color" : COLOR_LGBM},
     ]
 
-    load_and_plot(data, 1.4166666666666665, "kuhn", use_log_scale)
+    load_and_plot(data, 1.4166666666666665, "goofspiel_4", use_log_scale)
 
 if __name__ == "__main__":
     args = sys.argv[1:]
