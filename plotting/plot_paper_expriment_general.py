@@ -5,6 +5,8 @@ import glob
 import numpy as np
 from scipy import stats
 import plot_paper_experiment_config as conf
+import seaborn as sns
+from plot_paper_experiment_config import COLOR_RANDOM
 
 def load_data(file_start):
     data = {"x": [], "y": []}
@@ -48,7 +50,7 @@ def load_and_plot(data, random_exploitability, file_identifier, use_log_scale):
         plt.plot(d["data"]["x"][0], d["mean"], label=d["name"], color=d["color"], linewidth=conf.LINEWIDTH)
         plt.fill_between(d["data"]["x"][0], (d["mean"] - d["ci"]), (d["mean"] + d["ci"]), color=d["color"], alpha=conf.ALPHA)
 
-    plt.plot([d["data"]["x"][0][0], d["data"]["x"][0][-1]], [random_exploitability]*2, label="Random", color="black", linewidth=conf.LINEWIDTH)
+    plt.plot([d["data"]["x"][0][0], d["data"]["x"][0][-1]], [random_exploitability]*2, label="Random", color=COLOR_RANDOM, linewidth=conf.LINEWIDTH)
 
     plt.xlabel("Iteration")
     plt.ylabel("Exploitability")
